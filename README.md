@@ -1,22 +1,70 @@
-# Unity Team 3 Project
+**StealMan**
 
-Welcome to the project repository. Please follow these rules to keep our workflow clean.
+A Unity game built around a unique shadow-based gameplay mechanic.
 
-## 🚀 First-Time Setup
-1. **Install Git LFS:** Open your terminal and run:
-   ```bash
-   git lfs install
-   ```
-2. **Clone the Project:** Clone this repository to your local machine.
-3. **Open in Unity:** Add the cloned folder to Unity Hub and open it. *(Note: Project files are currently being uploaded, please wait until the push is complete before opening! :)*
+**Project**
 
-## 🛠️ Git Rules
-* **No Direct Pushes:** Never push directly to `main` or `develop`.
-* **Use Feature Branches:** Always create a branch for your task:
-  ```bash
-  git checkout develop
-  git pull
-  git checkout -b feature/your-task-name
-  ```
-* **One Person Per Scene:** Coordinate with the team before opening a scene file to prevent merge conflicts. Use **Prefabs** as much as possible.
-* **Submit a PR:** Push your branch and open a Pull Request (PR) into `develop` to get your work reviewed.
+- Game: StealMan
+- Engine: Unity 6
+- Team: Unity Team 3
+
+**Core Gameplay**
+
+- Move → Detach → Steal → Avoid Light → Return → Escape
+- The Player and Shadow operate as separate entities with different abilities and interactions.
+
+**Git Workflow**
+
+- `Develop` is the main integration branch.
+- Never push directly to `Develop`.
+- Use a dedicated feature branch for your work.
+
+Workflow:
+
+- `Develop`
+- ↓ Feature Branch
+- ↓ Commit & Push
+- ↓ Pull Request
+- ↓ Review & Test
+- ↓ `Develop`
+
+Branch naming:
+
+- `feature/<developer>-<system>`
+
+Examples:
+
+- `feature/aditya-integration`
+- `feature/sanju-gameplay-foundation`
+- `feature/mohit-meta-systems`
+
+- Keep your work isolated to your assigned system.
+- Push meaningful milestones regularly.
+
+**Work Tracker**
+
+- The Google Work Tracker is the source of truth for task assignments and progress.
+- Keep your assigned tab updated with:
+  - Task status
+  - Progress
+  - Notes
+  - Blockers
+  - Review status
+
+**Communication**
+
+- Use Discord for:
+  - Development discussions
+  - Technical updates
+  - Commits and PRs
+  - Blockers and issues
+- Use WhatsApp for:
+  - Team-wide announcements
+  - General communication
+- Stay updated with the Discord Announcements channel.
+
+**Development Rule**
+
+- Build independently.
+- Integrate carefully.
+- Test before submitting a PR.
