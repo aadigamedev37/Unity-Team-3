@@ -2353,7 +2353,7 @@ Transform:
   m_GameObject: {fileID: 2113607046}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.068, z: 0}
+  m_LocalPosition: {x: 0, y: 0.6, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2371,9 +2371,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b5a225eed43c294f9fe2e9fd058ddd3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SurfaceTraversal
+  surfaceProbe: {fileID: 2113607047}
   surfaceLayer:
     serializedVersion: 2
     m_Bits: 8
+  detectionDistance: 2
+  detectionRadius: 0.5
+  maxSlopeAngle: 60
+  detectForward: 1
+  detectGround: 1
+  drawDebug: 1
   uiShadowManager: {fileID: 1262818539}
 --- !u!135 &2113607050
 SphereCollider:
@@ -2392,7 +2399,7 @@ SphereCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 1
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Radius: 0.82
   m_Center: {x: 0, y: 0, z: 0}
@@ -2435,9 +2442,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58f845a1514817e46aa45ef4da67ddad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HazardDetector
-  hazardLayer:
+  surfaceProbe: {fileID: 2113607047}
+  hardLayer:
     serializedVersion: 2
     m_Bits: 64
+  detectionDistance: 2
+  detectionRadius: 0.5
+  maxSlopeAngle: 60
+  detectForward: 1
+  detectGround: 1
+  drawDebug: 1
   uiShadowManager: {fileID: 1262818539}
 --- !u!1 &2133373778
 GameObject:
@@ -2764,9 +2778,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b5a225eed43c294f9fe2e9fd058ddd3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SurfaceTraversal
+  surfaceProbe: {fileID: 0}
   surfaceLayer:
     serializedVersion: 2
     m_Bits: 8
+  detectionDistance: 2
+  detectionRadius: 0.5
+  maxSlopeAngle: 60
+  detectForward: 1
+  detectGround: 1
+  drawDebug: 1
   uiShadowManager: {fileID: 0}
 --- !u!1001 &7237240466149042980
 PrefabInstance:
