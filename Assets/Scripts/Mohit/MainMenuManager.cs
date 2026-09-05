@@ -48,9 +48,6 @@ namespace Mohit.MetaSystems
         {
             Debug.Log($"MainMenuManager: Would load level {levelNumber} " +
                       $"(waiting on Harsh's LevelManager.LoadLevel API to wire this up for real).");
-
-            // TODO (Week 2): Replace with actual call, e.g.
-            // LevelManager.Instance.LoadLevel(levelNumber);
         }
     }
 }
