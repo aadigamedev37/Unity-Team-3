@@ -14,10 +14,13 @@ namespace Mohit.MetaSystems
         private void Start()
         {
             if (SaveManager.Instance == null)
+            
             {
                 Debug.LogError("MainMenuManager: SaveManager instance not found. " +
                                 "Make sure a SaveManager exists in the scene or persists from a previous scene.");
             }
+
+            // SaveManager.Instance.CompleteLevel(1);
         }
 
         // Hook this to your "Play" button
