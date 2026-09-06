@@ -12,20 +12,18 @@ public class PlayerShadowStateMachine : MonoBehaviour
     public bool Detach()
     {
         if (CurrentState != PlayerShadowState.Attached)
-        {
             return false;
-        }
 
         CurrentState = PlayerShadowState.Detached;
+
+        Debug.Log("Shadow Detached");
         return true;
     }
 
     public bool Recall()
     {
         if (CurrentState != PlayerShadowState.Detached)
-        {
             return false;
-        }
 
         CurrentState = PlayerShadowState.Reuniting;
         return true;
@@ -34,9 +32,7 @@ public class PlayerShadowStateMachine : MonoBehaviour
     public bool CompleteReunion()
     {
         if (CurrentState != PlayerShadowState.Reuniting)
-        {
             return false;
-        }
 
         CurrentState = PlayerShadowState.Attached;
         return true;
