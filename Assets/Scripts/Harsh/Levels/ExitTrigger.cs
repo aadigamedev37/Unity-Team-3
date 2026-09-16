@@ -1,23 +1,49 @@
 using UnityEngine;
 
 /// <summary>
-/// Detects an object entering the level exit and requests
-/// the next configured level from LevelManager.
+/// Detects the Player entering the level exit
+/// and requests the next configured level.
 /// </summary>
 public class ExitTrigger : MonoBehaviour
 {
-    [Header("Dependencies")]
-    [SerializeField]
     private LevelManager levelManager;
 
     private void OnTriggerEnter(Collider other)
     {
         if (levelManager == null)
         {
-            Debug.LogError("ExitTrigger requires a LevelManager.", this);
+            levelManager = FindFirstObjectByType<LevelManager>();
+        }
+
+        if (levelManager == null)
+        {
+            Debug.LogError(
+                "ExitTrigger could not find a LevelManager.",
+                this);
+            return;
+        }
+
+        if (!IsPlayer(other))
+        {
             return;
         }
 
         levelManager.LoadNextLevel();
+    }
+
+    private bool IsPlayer(Collider other)
+    {
+        MonoBehaviour[] behaviours =
+            other.GetComponentsInParent<MonoBehaviour>();
+
+        foreach (MonoBehaviour behaviour in behaviours)
+        {
+            if (behaviour is IPlayerController)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
