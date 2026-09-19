@@ -8,8 +8,9 @@ public class UIShadowManager : MonoBehaviour
     public Slider manabar;
     public ShadowManager shadowManager;
     public float manaDecreasetime = 10f; // Rate at which mana decreases when shadow is controlled
-    public TextMeshProUGUI ShadowSurface; 
+    public TextMeshProUGUI limit; 
     public TextMeshProUGUI Hazard; 
+
 
 
     void Start()

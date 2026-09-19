@@ -37,19 +37,29 @@ public class SurfaceTraversal : MonoBehaviour
 
     [Tooltip("Animator inside Skeleton. Automatically found if empty.")]
     [SerializeField] private Animator skeletonAnimator;
+
     [Header("Top / Feet")]
     [SerializeField] private Transform footProbe;
     [SerializeField] private float topReachTolerance = 0.05f;
     [SerializeField] private float topForwardOffset = 0.6f;
+
     [Header("Camera")]
     [SerializeField] private Transform cameraTarget;
+
     private Quaternion savedCameraTargetRotation;
+
     // Original Skeleton rotation
     private Quaternion originalSkeletonLocalRotation;
 
     // Current wall information
     private Vector3 wallNormal;
     private Vector3 wallPoint;
+
+    // Rotation that should be applied to Skeleton while on wall.
+    private Quaternion wallSkeletonRotation;
+
+    // Keeps wall rotation active while Animator is enabled.
+    private bool wallRotationActive;
 
     private void Awake()
     {
@@ -91,6 +101,44 @@ public class SurfaceTraversal : MonoBehaviour
             }
         }
     }
+
+    // =========================================================
+    // LATE UPDATE
+    // =========================================================
+    // Animator updates before LateUpdate.
+    //
+    // Therefore we apply the wall Skeleton rotation again here
+    // AFTER the Animator has updated.
+    //
+    // This allows:
+    // Isdetach = true
+    // AND
+    // correct wall-facing rotation.
+    // =========================================================
+
+    private void LateUpdate()
+    {
+        if (currentState != TraversalState.Wall)
+            return;
+
+        if (!wallRotationActive)
+            return;
+
+        // Animator can overwrite Skeleton rotation.
+        // Apply our wall rotation after Animator has updated.
+        if (skeleton != null)
+        {
+            skeleton.rotation = wallSkeletonRotation;
+        }
+
+        // Keep the camera in the wall view.
+        SetCameraForWall(wallNormal);
+    }
+
+    // =========================================================
+    // CAMERA
+    // =========================================================
+
     private void SetCameraForWall(Vector3 wallNormal)
     {
         if (cameraTarget == null)
@@ -102,9 +150,8 @@ public class SurfaceTraversal : MonoBehaviour
          *
          * Wall normal = direction OUT from the wall.
          *
-         * Therefore the camera is positioned/viewed
-         * from behind Shadow while Shadow's back is
-         * against the wall.
+         * CameraTarget faces toward the wall so the camera
+         * sees Shadow from the front.
          */
 
         Vector3 lookDirection = wallNormal;
@@ -116,16 +163,13 @@ public class SurfaceTraversal : MonoBehaviour
 
         lookDirection.Normalize();
 
-        /*
-         * CameraTarget faces toward the direction
-         * the camera should look.
-         */
         cameraTarget.rotation =
             Quaternion.LookRotation(
                 -lookDirection,
                 Vector3.up
             );
     }
+
     // =========================================================
     // FIND WALL
     // =========================================================
@@ -174,6 +218,15 @@ public class SurfaceTraversal : MonoBehaviour
         wallPoint = hit.point;
 
         /*
+         * Save camera rotation before changing it.
+         */
+        if (cameraTarget != null)
+        {
+            savedCameraTargetRotation =
+                cameraTarget.rotation;
+        }
+
+        /*
          * Disable normal movement.
          */
         if (shadowController != null)
@@ -208,16 +261,13 @@ public class SurfaceTraversal : MonoBehaviour
         if (skeleton == null)
             return;
 
-        // Animator can overwrite the Skeleton rotation.
-        if (skeletonAnimator != null)
-        {
-            skeletonAnimator.enabled = false;
-        }
+        /*
+         * Wall normal points OUT of the wall.
+         *
+         * Shadow's FRONT faces the wall normal.
+         * Therefore Shadow's BACK is against the wall.
+         */
 
-        // Wall normal points OUT of the wall.
-        //
-        // We want Shadow's BACK to face the wall,
-        // therefore the FRONT faces away from the wall.
         Vector3 facingDirection = normal;
 
         facingDirection.y = 0f;
@@ -227,13 +277,35 @@ public class SurfaceTraversal : MonoBehaviour
 
         facingDirection.Normalize();
 
-        Quaternion targetRotation =
+        wallSkeletonRotation =
             Quaternion.LookRotation(
                 facingDirection,
                 Vector3.up
             );
 
-        skeleton.rotation = targetRotation;
+        /*
+         * Keep wall rotation active.
+         *
+         * LateUpdate() will reapply this after Animator.
+         */
+        wallRotationActive = true;
+
+        /*
+         * IMPORTANT:
+         *
+         * Animator must stay ENABLED so it can process
+         * the Isdetach transition.
+         */
+        if (skeletonAnimator != null)
+        {
+            skeletonAnimator.enabled = true;
+            skeletonAnimator.SetBool("Isdetach", true);
+        }
+
+        /*
+         * Apply immediately.
+         */
+        skeleton.rotation = wallSkeletonRotation;
     }
 
     // =========================================================
@@ -266,8 +338,8 @@ public class SurfaceTraversal : MonoBehaviour
             wallRight = transform.right;
         }
 
-        Vector3 movement =-
-            wallRight * input.x +
+        Vector3 movement =
+            -wallRight * input.x +
             Vector3.up * input.y;
 
         movement *= wallMoveSpeed * Time.deltaTime;
@@ -400,6 +472,7 @@ public class SurfaceTraversal : MonoBehaviour
         // Check that it is still a wall.
         float angle =
             Vector3.Angle(hit.normal, Vector3.up);
+
         Debug.Log("Wall angle: " + angle);
 
         if (angle < 80f)
@@ -444,6 +517,11 @@ public class SurfaceTraversal : MonoBehaviour
 
         currentState = TraversalState.Floor;
 
+        /*
+         * Stop LateUpdate from forcing the wall rotation.
+         */
+        wallRotationActive = false;
+
         // Restore original Skeleton rotation.
         if (skeleton != null)
         {
@@ -451,10 +529,22 @@ public class SurfaceTraversal : MonoBehaviour
                 originalSkeletonLocalRotation;
         }
 
-        // Turn Animator back on.
+        /*
+         * Turn Animator back on and return to normal state.
+         */
         if (skeletonAnimator != null)
         {
             skeletonAnimator.enabled = true;
+            skeletonAnimator.SetBool("Isdetach", false);
+        }
+
+        /*
+         * Restore camera.
+         */
+        if (cameraTarget != null)
+        {
+            cameraTarget.rotation =
+                savedCameraTargetRotation;
         }
 
         // Re-enable Starter Assets movement.
@@ -466,11 +556,17 @@ public class SurfaceTraversal : MonoBehaviour
         wallNormal = Vector3.zero;
         wallPoint = Vector3.zero;
     }
+
+    // =========================================================
+    // FLOOR DETECTION
+    // =========================================================
+
     private void CheckForFloor()
     {
         RaycastHit hit;
 
-        Vector3 rayOrigin = transform.position + Vector3.up * 0.2f;
+        Vector3 rayOrigin =
+            transform.position + Vector3.up * 0.2f;
 
         if (Physics.Raycast(
             rayOrigin,
@@ -480,8 +576,9 @@ public class SurfaceTraversal : MonoBehaviour
             surfaceLayer,
             QueryTriggerInteraction.Ignore))
         {
-            float floorAngle = Vector3.Angle(hit.normal, Vector3.up);
-           
+            float floorAngle =
+                Vector3.Angle(hit.normal, Vector3.up);
+
             // Horizontal surface = floor
             if (floorAngle < 30f)
             {
@@ -489,6 +586,11 @@ public class SurfaceTraversal : MonoBehaviour
             }
         }
     }
+
+    // =========================================================
+    // TOP DETECTION
+    // =========================================================
+
     private bool wallTopDetected;
     private RaycastHit wallTopHit;
 
@@ -501,6 +603,7 @@ public class SurfaceTraversal : MonoBehaviour
          * Check above Shadow.
          * We move the ray toward the wall's upper edge.
          */
+
         Vector3 rayOrigin =
             transform.position
             + Vector3.up * 1.0f
@@ -536,6 +639,7 @@ public class SurfaceTraversal : MonoBehaviour
          * Only a horizontal surface is considered
          * the top of the wall.
          */
+
         if (angle > 30f)
         {
             wallTopDetected = false;
@@ -545,6 +649,11 @@ public class SurfaceTraversal : MonoBehaviour
         wallTopDetected = true;
         wallTopHit = hit;
     }
+
+    // =========================================================
+    // REACH TOP WITH FEET
+    // =========================================================
+
     private void CheckIfReachedWallTop()
     {
         if (!wallTopDetected)
@@ -558,6 +667,7 @@ public class SurfaceTraversal : MonoBehaviour
          *
          * We use the FEET position, not the Shadow root.
          */
+
         float feetY = footProbe.position.y;
         float topY = wallTopHit.point.y;
 
@@ -566,6 +676,7 @@ public class SurfaceTraversal : MonoBehaviour
          *
          * Shadow stays in Wall state and can continue climbing.
          */
+
         if (feetY < topY - topReachTolerance)
             return;
 
@@ -579,6 +690,7 @@ public class SurfaceTraversal : MonoBehaviour
          * Calculate how much we need to move Shadow vertically
          * so the feet sit exactly on the top surface.
          */
+
         float verticalCorrection =
             topY - footProbe.position.y;
 
@@ -587,6 +699,7 @@ public class SurfaceTraversal : MonoBehaviour
          *
          * -wallNormal = direction onto the top of the wall.
          */
+
         Vector3 newPosition =
             transform.position;
 
@@ -600,10 +713,12 @@ public class SurfaceTraversal : MonoBehaviour
         /*
          * Now the feet are actually on the top.
          */
+
         LeaveWall();
 
         wallTopDetected = false;
     }
+
     // =========================================================
     // DEBUG
     // =========================================================
