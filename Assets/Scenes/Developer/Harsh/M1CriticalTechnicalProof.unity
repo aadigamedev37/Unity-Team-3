@@ -159,12 +159,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 106821486}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 700364417}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &144528206
 GameObject:
@@ -210,7 +210,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 525f2415ca1b07e42a5883be982e63a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RestartSystem
-  levelManager: {fileID: 106821487}
 --- !u!1 &316102064
 GameObject:
   m_ObjectHideFlags: 0
@@ -436,7 +435,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 106821488}
   - {fileID: 144528207}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -855,7 +853,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b6c7e1c58076834380a1271a12c1bdd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExitTrigger
-  levelManager: {fileID: 106821487}
 --- !u!1 &1840842204
 GameObject:
   m_ObjectHideFlags: 0
@@ -977,3 +974,4 @@ SceneRoots:
   - {fileID: 316102065}
   - {fileID: 700364417}
   - {fileID: 1169791554}
+  - {fileID: 106821488}
