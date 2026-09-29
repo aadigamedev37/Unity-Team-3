@@ -322,29 +322,25 @@ public class SurfaceTraversal : MonoBehaviour
         if (input.sqrMagnitude < 0.001f)
             return;
 
-        /*
-         * Movement is calculated relative to the wall.
-         *
-         * "right" is the direction across the wall.
-         * "up" is vertical movement on the wall.
-         */
-
         Vector3 wallRight =
             Vector3.Cross(Vector3.up, wallNormal).normalized;
 
-        // Prevent problems with almost-vertical normals.
-        if (wallRight.sqrMagnitude < 0.001f)
-        {
-            wallRight = transform.right;
-        }
-
-        Vector3 movement =
+        Vector3 desiredMovement =
             -wallRight * input.x +
             Vector3.up * input.y;
 
-        movement *= wallMoveSpeed * Time.deltaTime;
+        // Explicitly project movement onto the wall surface.
+        Vector3 projectedMovement =
+            Vector3.ProjectOnPlane(desiredMovement, wallNormal);
 
-        TryMoveOnWall(movement);
+        if (projectedMovement.sqrMagnitude < 0.001f)
+            return;
+
+        projectedMovement.Normalize();
+
+        projectedMovement *= wallMoveSpeed * Time.deltaTime;
+
+        TryMoveOnWall(projectedMovement);
     }
 
     // =========================================================
