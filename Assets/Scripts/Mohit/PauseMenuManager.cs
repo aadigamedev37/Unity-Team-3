@@ -14,15 +14,17 @@ namespace Mohit.MetaSystems
 
         private void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
+            Instance = this;          // always point at the manager in the current scene
+            Time.timeScale = 1f;      // safety: never start a scene paused
 
             if (pausePanel != null)
                 pausePanel.SetActive(false);
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
         }
 
         // TODO (MOH-009): Replace manual pause trigger with Aditya's GameManager.OnPaused event once confirmed
@@ -60,7 +62,11 @@ namespace Mohit.MetaSystems
         public void OnMainMenuPressed()
         {
             Time.timeScale = 1f; // always reset before leaving
-            SceneManager.LoadScene("MainMenu");
+
+            if (SceneFader.Instance != null)
+                SceneFader.Instance.LoadScene("MainMenu");
+            else
+                SceneManager.LoadScene("MainMenu");
         }
 
         // Hook this to Pause panel's "Resume" button
