@@ -14,11 +14,13 @@ namespace Mohit.MetaSystems
         private void Start()
         {
             if (SaveManager.Instance == null)
-            
+
             {
                 Debug.LogError("MainMenuManager: SaveManager instance not found. " +
                                 "Make sure a SaveManager exists in the scene or persists from a previous scene.");
             }
+
+            // SaveManager.Instance.CompleteLevel(15);
 
             // SaveManager.Instance.CompleteLevel(1);
         }
@@ -33,7 +35,10 @@ namespace Mohit.MetaSystems
         // Hook this to your "Level Select" button
         public void OnLevelSelectPressed()
         {
-            SceneManager.LoadScene(levelSelectSceneName);
+            if (SceneFader.Instance != null)
+                SceneFader.Instance.LoadScene(levelSelectSceneName);
+            else
+                SceneManager.LoadScene(levelSelectSceneName);
         }
 
         // Hook this to your "Quit" button
