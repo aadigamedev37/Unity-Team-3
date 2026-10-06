@@ -24,26 +24,34 @@ public class LevelManager : MonoBehaviour
     // Other systems can check this, but only LevelManager can change it.
     public bool IsLoading { get; private set; }
 
+    private static LevelManager instance;
+
 
     /// <summary>
     /// Initializes the LevelManager when the object is created.
     /// Validates the configured levels and determines the starting level.
     /// </summary>
     private void Awake()
+{
+    if (instance != null && instance != this)
     {
-        ValidateLevelConfiguration();
-
-        // Find and store the configuration for the starting level.
-        CurrentLevel = GetLevelById(startingLevelId);
-
-        // Warn us if the configured starting level does not exist.
-        if (CurrentLevel == null)
-        {
-            Debug.LogError(
-                $"LevelManager could not find starting level with ID {startingLevelId}.",
-                this);
-        }
+        Destroy(gameObject);
+        return;
     }
+
+    instance = this;
+    DontDestroyOnLoad(gameObject);
+
+    ValidateLevelConfiguration();
+    CurrentLevel = GetLevelById(startingLevelId);
+
+    if (CurrentLevel == null)
+    {
+        Debug.LogError(
+            $"LevelManager could not find starting level with ID {startingLevelId}.",
+            this);
+    }
+}
 
 
     /// <summary>

@@ -7,8 +7,6 @@ using UnityEngine;
 /// </summary>
 public class RestartSystem : MonoBehaviour
 {
-    [Header("Dependencies")]
-    [SerializeField]
     private LevelManager levelManager;
 
     /// <summary>
@@ -18,7 +16,14 @@ public class RestartSystem : MonoBehaviour
     {
         if (levelManager == null)
         {
-            Debug.LogError("RestartSystem requires a LevelManager.", this);
+            levelManager = FindFirstObjectByType<LevelManager>();
+        }
+
+        if (levelManager == null)
+        {
+            Debug.LogError(
+                "RestartSystem could not find a LevelManager.",
+                this);
             return false;
         }
 
@@ -27,7 +32,6 @@ public class RestartSystem : MonoBehaviour
             Debug.LogError(
                 "Cannot restart because LevelManager has no current level.",
                 this);
-
             return false;
         }
 

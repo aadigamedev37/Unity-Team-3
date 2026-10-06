@@ -6,20 +6,23 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/Developer/Harsh/Bootstrap.unity
+    guid: 58cfd7ff04019684581d7ea2203499e9
+  - enabled: 1
+    path: Assets/Scenes/Developer/Harsh/Level_01_Test.unity
+    guid: d2c1cb2793cd64a4780e65569708e76c
+  - enabled: 1
     path: Assets/Scenes/Systems Programmer/CoreSystemsTestScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 1
     path: Assets/Scenes/Developer/Harsh/LevelSystemTest.unity
-    guid: 939b1979c3c15742bb24d33fcf202127
-  - enabled: 1
-    path: Assets/Scenes/Developer/Harsh/Level_01_Test.unity
-    guid: d2c1b2793cd64a4780e65569708e76c
+    guid: 9397b1979c3c15742bb24d33fc202127
   - enabled: 1
     path: Assets/Scenes/Developer/Mohit/LevelSelect.unity
-    guid: 4a2eb6776ec0e2949aab4b090e387cb
+    guid: 4a2eb6776ec0e2949aab4b4090e387cb
   - enabled: 1
     path: Assets/Scenes/Developer/Mohit/MainMenu.unity
-    guid: 6a2422cf0a98d565488a0f833e32c1ab98
+    guid: 6a2422cf0a98d56488a0f833e2ca1b98
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
