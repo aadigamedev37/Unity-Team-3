@@ -18,6 +18,10 @@ namespace Mohit.MetaSystems
 
         public const int TotalLevels = 15;
 
+        public event Action OnGameCompleted;
+
+        public bool IsGameCompleted => _data.completedLevels.Contains(TotalLevels);
+
         private SaveData _data;
         private string SavePath => Path.Combine(Application.persistentDataPath, "savedata.json");
 
@@ -37,6 +41,9 @@ namespace Mohit.MetaSystems
 
         public void LoadData()
         {
+
+            Debug.Log("SaveManager: loading from " + SavePath);
+            
             if (File.Exists(SavePath))
             {
                 try
@@ -54,8 +61,46 @@ namespace Mohit.MetaSystems
             else
             {
                 _data = new SaveData();
-                SaveToDisk();
             }
+
+            ValidateData();
+            SaveToDisk();
+        }
+
+        private void ValidateData()
+        {
+            _data.unlockedLevels = CleanList(_data.unlockedLevels);
+            _data.completedLevels = CleanList(_data.completedLevels);
+
+            // Find the highest level the player should have access to
+            int highest = 1;
+            foreach (int lvl in _data.unlockedLevels)
+                if (lvl > highest) highest = lvl;
+
+            foreach (int lvl in _data.completedLevels)
+                highest = Mathf.Max(highest, Mathf.Min(lvl + 1, TotalLevels));
+
+            // Levels unlock in order, so everything up to the highest must be unlocked
+            _data.unlockedLevels.Clear();
+            for (int i = 1; i <= highest; i++)
+                _data.unlockedLevels.Add(i);
+
+                Debug.Log($"SaveManager: validated. Unlocked = [{string.Join(",", _data.unlockedLevels)}], Completed = [{string.Join(",", _data.completedLevels)}]");
+        }
+
+        private List<int> CleanList(List<int> source)
+        {
+            List<int> result = new List<int>();
+            if (source == null) return result;
+
+            foreach (int lvl in source)
+            {
+                if (lvl >= 1 && lvl <= TotalLevels && !result.Contains(lvl))
+                    result.Add(lvl);
+            }
+
+            result.Sort();
+            return result;
         }
 
         private void SaveToDisk()
@@ -83,18 +128,34 @@ namespace Mohit.MetaSystems
 
         public void CompleteLevel(int levelNumber)
         {
-            if (!_data.completedLevels.Contains(levelNumber))
+            if (levelNumber < 1 || levelNumber > TotalLevels)
             {
-                _data.completedLevels.Add(levelNumber);
+                Debug.LogWarning($"SaveManager: Ignoring CompleteLevel({levelNumber}), out of range.");
+                return;
             }
+
+            if (!IsLevelUnlocked(levelNumber))
+            {
+                Debug.LogWarning($"SaveManager: Level {levelNumber} completed but was never unlocked. Ignoring.");
+                return;
+            }
+
+            bool firstTimeCompleting = !_data.completedLevels.Contains(levelNumber);
+
+            if (firstTimeCompleting)
+                _data.completedLevels.Add(levelNumber);
 
             int nextLevel = levelNumber + 1;
             if (nextLevel <= TotalLevels && !_data.unlockedLevels.Contains(nextLevel))
-            {
                 _data.unlockedLevels.Add(nextLevel);
-            }
 
             SaveToDisk();
+
+            if (levelNumber == TotalLevels && firstTimeCompleting)
+            {
+                Debug.Log("SaveManager: Final level completed.");
+                OnGameCompleted?.Invoke();
+            }
         }
 
         public int GetHighestUnlockedLevel()

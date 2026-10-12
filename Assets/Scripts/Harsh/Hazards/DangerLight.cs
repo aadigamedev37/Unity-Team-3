@@ -2,30 +2,36 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// Static light hazard that detects the Shadow entering its volume
-/// and raises the destruction event required by the level systems.
+/// Environmental hazard that signals when the Shadow enters
+/// its volume and should be destroyed.
 /// </summary>
 public class DangerLight : LightHazardBase
 {
-    /// <summary>
-    /// Raised when the Shadow enters the active Danger Light volume.
-    /// The Shadow/gameplay system is responsible for handling the
-    /// actual destruction response.
-    /// </summary>
     public event Action OnShadowDestroyed;
 
     protected override void HandleHazardEnter(Collider other)
     {
-        // Find an existing Shadow implementation through the established interface.
-        MonoBehaviour[] behaviours = other.GetComponentsInParent<MonoBehaviour>();
+        if (!IsShadow(other))
+        {
+            return;
+        }
+
+        OnShadowDestroyed?.Invoke();
+    }
+
+    private bool IsShadow(Collider other)
+    {
+        MonoBehaviour[] behaviours =
+            other.GetComponentsInParent<MonoBehaviour>();
 
         foreach (MonoBehaviour behaviour in behaviours)
         {
-            if (behaviour is not IShadowController)
-                continue;
-
-            OnShadowDestroyed?.Invoke();
-            return;
+            if (behaviour is IShadowController)
+            {
+                return true;
+            }
         }
+
+        return false;
     }
 }

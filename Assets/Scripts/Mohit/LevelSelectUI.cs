@@ -65,16 +65,29 @@ namespace Mohit.MetaSystems
             }
         }
 
+        // In LevelSelectUI.cs — replace OnLevelButtonPressed with:
         private void OnLevelButtonPressed(int levelNumber)
         {
-            Debug.Log($"LevelSelectUI: Level {levelNumber} pressed " +
-                      $"(waiting on Harsh's LevelManager.LoadLevel API to wire this up for real).");
+            LevelManager levelManager = FindAnyObjectByType<LevelManager>();
+
+            if (levelManager != null)
+            {
+                levelManager.LoadLevel(levelNumber);
+            }
+            else
+            {
+                Debug.LogError("LevelSelectUI: No LevelManager found in the current scene. " +
+                                "Check with Harsh/Aditya on how LevelManager persists across scenes.");
+            }
         }
 
         // Hook this to a "Back" button if you add one
         public void OnBackPressed()
         {
-            SceneManager.LoadScene("MainMenu");
+            if (SceneFader.Instance != null)
+                SceneFader.Instance.LoadScene("MainMenu");
+            else
+                SceneManager.LoadScene("MainMenu");
         }
     }
 }
