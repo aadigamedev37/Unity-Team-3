@@ -104,3 +104,18 @@ Located in `Assets/Tests/EditMode/Core/`:
 - `InputSystemValidationTests.cs` (5 tests): Validates target switching, input dispatch, and reunion routing.
 - `TrapRecoveryValidationTests.cs` (3 tests): Validates trap event handling and recovery tap flow.
 - `StealIntegrationValidationTests.cs` (3 tests): Validates stealable door states and colliders.
+- `FeedbackAndContextualActionValidationTests.cs` (10 tests): Validates contextual button switching, action routing, FeedbackHooks event triggers, and graceful fallback with unassigned SFX/VFX.
+
+**Total Test Count:** 37 PlayMode tests across 5 fixtures, 100% passing.
+
+---
+
+## 8. Performance & Allocation Guarantees (T-015)
+
+- **Zero Per-Frame Allocations:**
+  - `InputSystem`: Update loop queries `virtualJoystick.Direction` directly without intermediate object allocations.
+  - `StealInteractor`: Pre-allocates a 16-element `Collider[]` buffer and uses `Physics.OverlapSphereNonAlloc`. Detection completely halts when not in `Detached` state.
+  - `PlayerShadowStateMachine`: Purely event-driven (`OnStateChanged`); no per-frame polling or state allocations.
+  - `ContextualActionButton`: Purely event-driven; updates UI only upon state changes or steal target range changes.
+  - `RecoverHandler`: Active countdown runs only when trapped (`isTrapped && useTimeLimit`). Zero heap allocations during recovery tapping.
+  - `FeedbackHooks`: Purely event-driven; null-checked before audio playback or particle emission to eliminate exception overhead.

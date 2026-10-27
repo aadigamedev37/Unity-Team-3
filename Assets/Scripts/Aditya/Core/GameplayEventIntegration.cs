@@ -44,8 +44,11 @@ public class GameplayEventIntegration : MonoBehaviour
         }
     }
 
+    private bool isRestarting = false;
+
     private void OnEnable()
     {
+        isRestarting = false;
         SubscribeToHazards();
 
         if (recoverHandler != null)
@@ -56,6 +59,7 @@ public class GameplayEventIntegration : MonoBehaviour
 
     private void OnDisable()
     {
+        isRestarting = false;
         UnsubscribeFromHazards();
 
         if (recoverHandler != null)
@@ -132,8 +136,21 @@ public class GameplayEventIntegration : MonoBehaviour
         }
     }
 
+    public void SetStateMachine(PlayerShadowStateMachine sm)
+    {
+        stateMachine = sm;
+    }
+
     public void HandleShadowTrapped()
     {
+        if (isRestarting)
+            return;
+
+        if (stateMachine == null)
+        {
+            stateMachine = GetComponent<PlayerShadowStateMachine>() ?? FindAnyObjectByType<PlayerShadowStateMachine>();
+        }
+
         if (stateMachine == null)
         {
             Debug.LogWarning("GameplayEventIntegration: StateMachine reference is missing.", this);
@@ -152,7 +169,21 @@ public class GameplayEventIntegration : MonoBehaviour
 
     public void HandleShadowDestroyed()
     {
+        if (isRestarting)
+            return;
+
+        isRestarting = true;
         Debug.LogWarning("GameplayEventIntegration: Shadow destroyed by hazard or failed recovery! Initiating restart.");
+
+        if (StealMan.Core.GameManager.Instance != null)
+        {
+            StealMan.Core.GameManager.Instance.FailLevel("Hazard Destruction / Recovery Failed");
+        }
+
+        if (restartSystem == null)
+        {
+            restartSystem = GetComponent<RestartSystem>() ?? FindAnyObjectByType<RestartSystem>();
+        }
 
         if (restartSystem != null)
         {

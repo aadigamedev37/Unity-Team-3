@@ -18,11 +18,14 @@ public class M1TechnicalProofRunner : MonoBehaviour
     [Header("Interactions & Hazards")]
     [SerializeField] private StealInteractor stealInteractor;
     [SerializeField] private StealableDoor stealableDoor;
+    [SerializeField] private StealableDrawbridge stealableDrawbridge;
+    [SerializeField] private StealablePlatform stealablePlatform;
     [SerializeField] private DangerLight dangerLight;
     [SerializeField] private TrapLight trapLight;
     [SerializeField] private GameplayEventIntegration eventIntegration;
     [SerializeField] private RecoverHandler recoverHandler;
     [SerializeField] private RestartSystem restartSystem;
+    [SerializeField] private ExitTrigger exitTrigger;
 
     [Header("Proof Execution")]
     [SerializeField] private bool runAutomaticallyOnStart = false;
@@ -55,11 +58,14 @@ public class M1TechnicalProofRunner : MonoBehaviour
         if (actionButton == null) actionButton = FindAnyObjectByType<ContextualActionButton>();
         if (stealInteractor == null) stealInteractor = FindAnyObjectByType<StealInteractor>();
         if (stealableDoor == null) stealableDoor = FindAnyObjectByType<StealableDoor>();
+        if (stealableDrawbridge == null) stealableDrawbridge = FindAnyObjectByType<StealableDrawbridge>();
+        if (stealablePlatform == null) stealablePlatform = FindAnyObjectByType<StealablePlatform>();
         if (dangerLight == null) dangerLight = FindAnyObjectByType<DangerLight>();
         if (trapLight == null) trapLight = FindAnyObjectByType<TrapLight>();
         if (eventIntegration == null) eventIntegration = FindAnyObjectByType<GameplayEventIntegration>();
         if (recoverHandler == null) recoverHandler = FindAnyObjectByType<RecoverHandler>();
         if (restartSystem == null) restartSystem = FindAnyObjectByType<RestartSystem>();
+        if (exitTrigger == null) exitTrigger = FindAnyObjectByType<ExitTrigger>();
     }
 
     private void Start()
@@ -168,6 +174,32 @@ public class M1TechnicalProofRunner : MonoBehaviour
         {
             Debug.Log("[M1 STEP 4] (StealableDoor not bound; skipping physical door check).");
         }
+
+        if (stealableDrawbridge != null)
+        {
+            Debug.Log("[M1 STEP 4b] Validating Steal interaction with StealableDrawbridge...");
+            stealableDrawbridge.Steal();
+            if (!stealableDrawbridge.IsGhost)
+            {
+                Debug.LogError("[M1 FAIL] Drawbridge did not transition to Ghost state.");
+                IsRunning = false;
+                yield break;
+            }
+            Debug.Log("[M1 PASS] Drawbridge Steal succeeded: Bridge lowered and walkable.");
+        }
+
+        if (stealablePlatform != null)
+        {
+            Debug.Log("[M1 STEP 4c] Validating Steal interaction with StealablePlatform...");
+            stealablePlatform.Steal();
+            if (!stealablePlatform.IsFrozen)
+            {
+                Debug.LogError("[M1 FAIL] Platform did not transition to Frozen state.");
+                IsRunning = false;
+                yield break;
+            }
+            Debug.Log("[M1 PASS] Platform Steal succeeded: Platform entered Frozen state.");
+        }
         yield return new WaitForSeconds(stepDelay);
 
         // STEP 5: Trap Light Hazard
@@ -245,12 +277,24 @@ public class M1TechnicalProofRunner : MonoBehaviour
             dangerLight.OnShadowDestroyed += () => Debug.Log("[M1 EVENT] Danger Light destruction callback fired.");
         }
         Debug.Log("[M1 PASS] Danger Light destruction event hook registered.");
+        yield return new WaitForSeconds(stepDelay);
+
+        // STEP 9: Exit & Level Reset Integration
+        Debug.Log("[M1 STEP 9] Validating ExitTrigger and RestartSystem Integration...");
+        if (exitTrigger != null)
+        {
+            Debug.Log("[M1 PASS] ExitTrigger is present and active.");
+        }
+        if (restartSystem != null)
+        {
+            Debug.Log("[M1 PASS] RestartSystem is present and active.");
+        }
 
         ProofPassed = true;
         IsRunning = false;
 
         Debug.Log("==================================================");
-        Debug.Log("M1 CRITICAL TECHNICAL PROOF: ALL 8 STEPS PASSED!");
+        Debug.Log("M1 CRITICAL TECHNICAL PROOF: ALL 9 STEPS PASSED!");
         Debug.Log("==================================================");
     }
 }

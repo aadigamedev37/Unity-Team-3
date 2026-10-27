@@ -28,6 +28,10 @@ public class InputSystem : MonoBehaviour
     [SerializeField] private PlayerController playerController;
     [SerializeField] private MonoBehaviour shadowControllerTarget;
 
+    [Header("Cursor Settings (Editor / Mobile Testing)")]
+    [Tooltip("If true and a virtual joystick is present (mobile UI mode), ensures cursor remains unlocked and visible in the Editor.")]
+    [SerializeField] private bool unlockCursorForMobileUI = true;
+
     private IShadowController shadowController;
 
     public Vector2 MoveInput { get; private set; }
@@ -38,8 +42,51 @@ public class InputSystem : MonoBehaviour
     private void Awake()
     {
         MoveInput = Vector2.zero;
+        if (playerController == null)
+        {
+            playerController = FindAnyObjectByType<PlayerController>();
+        }
         ResolveShadowController();
     }
+
+    private void Start()
+    {
+#if UNITY_EDITOR
+        ConfigureCursorForEditorTesting();
+#endif
+        // Enforce initial Attached state: Player active, Shadow deactivated and hidden
+        HandleStateChanged(stateMachine != null ? stateMachine.CurrentState : PlayerShadowState.Attached);
+    }
+
+#if UNITY_EDITOR
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        if (hasFocus)
+        {
+            ConfigureCursorForEditorTesting();
+        }
+    }
+
+    private void ConfigureCursorForEditorTesting()
+    {
+        if (unlockCursorForMobileUI && virtualJoystick != null)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+
+            
+            var starterInputs = FindObjectsByType<StarterAssets.StarterAssetsInputs>();
+            foreach (var input in starterInputs)
+            {
+                if (input != null)
+                {
+                    input.cursorLocked = false;
+                    input.cursorInputForLook = false;
+                }
+            }
+        }
+    }
+#endif
 
     private void OnValidate()
     {
@@ -54,6 +101,15 @@ public class InputSystem : MonoBehaviour
             if (shadowController == null)
             {
                 Debug.LogWarning("InputSystem: shadowControllerTarget does not implement IShadowController.", this);
+            }
+        }
+        else if (shadowController == null)
+        {
+            var sma = FindAnyObjectByType<ShadowMovementAdapter>();
+            if (sma != null)
+            {
+                shadowController = sma;
+                shadowControllerTarget = sma;
             }
         }
     }
@@ -78,7 +134,7 @@ public class InputSystem : MonoBehaviour
 
         stateMachine = sm;
 
-        if (stateMachine != null && isActiveAndEnabled)
+        if (stateMachine != null)
         {
             stateMachine.OnStateChanged += HandleStateChanged;
         }
@@ -86,14 +142,59 @@ public class InputSystem : MonoBehaviour
 
     private void Update()
     {
-        if (virtualJoystick != null)
+        Vector2 input = Vector2.zero;
+        if (virtualJoystick != null && virtualJoystick.Direction != Vector2.zero)
         {
-            MoveInput = virtualJoystick.Direction;
+            input = virtualJoystick.Direction;
         }
+#if UNITY_EDITOR || UNITY_STANDALONE
         else
         {
-            MoveInput = Vector2.zero;
+            float h = 0f;
+            float v = 0f;
+            if (UnityEngine.InputSystem.Keyboard.current != null)
+            {
+                var kb = UnityEngine.InputSystem.Keyboard.current;
+                if (kb.wKey.isPressed || kb.upArrowKey.isPressed) v += 1f;
+                if (kb.sKey.isPressed || kb.downArrowKey.isPressed) v -= 1f;
+                if (kb.aKey.isPressed || kb.leftArrowKey.isPressed) h -= 1f;
+                if (kb.dKey.isPressed || kb.rightArrowKey.isPressed) h += 1f;
+            }
+            if (h == 0f && v == 0f)
+            {
+                try
+                {
+                    h = Input.GetAxisRaw("Horizontal");
+                    v = Input.GetAxisRaw("Vertical");
+                }
+                catch { }
+            }
+            input = Vector2.ClampMagnitude(new Vector2(h, v), 1f);
         }
+
+        // Action hotkeys: Q (Hung's standard shadow toggle), Space, E
+        bool actionPressed = false;
+        if (UnityEngine.InputSystem.Keyboard.current != null)
+        {
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            actionPressed = kb.qKey.wasPressedThisFrame || kb.eKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame;
+        }
+        if (!actionPressed)
+        {
+            try
+            {
+                actionPressed = Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space);
+            }
+            catch { }
+        }
+
+        if (actionPressed)
+        {
+            TriggerContextualAction();
+        }
+#endif
+
+        MoveInput = input;
 
         if (activeTarget == InputTarget.Player && playerController != null)
         {
@@ -105,8 +206,41 @@ public class InputSystem : MonoBehaviour
         }
     }
 
+    public void TriggerContextualAction()
+    {
+        var actionButton = FindAnyObjectByType<ContextualActionButton>();
+        if (actionButton != null)
+        {
+            actionButton.TriggerCurrentAction();
+        }
+        else if (stateMachine != null)
+        {
+            switch (stateMachine.CurrentState)
+            {
+                case PlayerShadowState.Attached:
+                    TriggerDetach();
+                    break;
+                case PlayerShadowState.Detached:
+                    TriggerRecall();
+                    break;
+                case PlayerShadowState.Trapped:
+                    TriggerRecover();
+                    break;
+            }
+        }
+    }
+
+    private int lastActionFrame = -1;
+    private InputAction lastAction;
+
     public void TriggerAction(InputAction action)
     {
+        // Prevent accidental double-trigger in the same frame (e.g. duplicate click or Detach immediately followed by Recall)
+        if (Application.isPlaying && Time.frameCount == lastActionFrame && (action == lastAction || (lastAction == InputAction.Detach && action == InputAction.Recall)))
+        {
+            return;
+        }
+
         if (stateMachine == null)
         {
             Debug.LogWarning("InputSystem: StateMachine reference is missing.");
@@ -140,6 +274,8 @@ public class InputSystem : MonoBehaviour
 
         if (actionSuccessful)
         {
+            lastActionFrame = Time.frameCount;
+            lastAction = action;
             OnAction?.Invoke(action);
         }
     }
@@ -235,6 +371,7 @@ public class InputSystem : MonoBehaviour
     {
         if (stateMachine != null)
         {
+            stateMachine.OnStateChanged -= HandleStateChanged;
             stateMachine.OnStateChanged += HandleStateChanged;
         }
     }

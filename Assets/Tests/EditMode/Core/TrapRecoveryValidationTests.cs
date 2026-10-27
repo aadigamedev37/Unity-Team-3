@@ -27,6 +27,8 @@ public class TrapRecoveryValidationTests
         shadowGo.transform.SetParent(rootGo.transform);
         shadow = shadowGo.AddComponent<IntegrationTestShadow>();
 
+        eventIntegration.SetStateMachine(stateMachine);
+        recoverHandler.SetStateMachine(stateMachine);
         eventIntegration.RegisterTrapLight(trapLight);
     }
 

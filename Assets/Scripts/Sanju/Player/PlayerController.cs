@@ -6,7 +6,7 @@
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
-public class PlayerController : MonoBehaviour, IPlayerAgent
+public class PlayerController : MonoBehaviour, IPlayerAgent, IPlayerController
 {
     //Header for initializing speed, gravity values and movement reference
     [Header("Movement")]
@@ -98,6 +98,11 @@ public class PlayerController : MonoBehaviour, IPlayerAgent
         isFrozen = false; //reset frozen state
 
         characterController.enabled = true; //enable the CharacterController again
+    }
+
+    public void Reset()
+    {
+        ResetToSpawn(transform.position, transform.rotation);
     }
 }
 

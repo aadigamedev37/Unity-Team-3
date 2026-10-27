@@ -66,10 +66,33 @@ public class ContextualActionButton : MonoBehaviour
         UpdateContextualState();
     }
 
+    public void SetStateMachine(PlayerShadowStateMachine sm)
+    {
+        if (stateMachine != null)
+        {
+            stateMachine.OnStateChanged -= HandleStateChanged;
+        }
+
+        stateMachine = sm;
+
+        if (stateMachine != null)
+        {
+            stateMachine.OnStateChanged -= HandleStateChanged;
+            stateMachine.OnStateChanged += HandleStateChanged;
+        }
+
+        UpdateContextualState();
+    }
+
     public void UpdateContextualState()
     {
         if (stateMachine == null)
             return;
+
+        if (button == null)
+        {
+            button = GetComponent<Button>();
+        }
 
         PlayerShadowState state = stateMachine.CurrentState;
         bool interactable = true;
@@ -129,8 +152,19 @@ public class ContextualActionButton : MonoBehaviour
         }
     }
 
+    private int lastClickFrame = -1;
+
+    public void TriggerCurrentAction()
+    {
+        HandleButtonClick();
+    }
+
     private void HandleButtonClick()
     {
+        if (Time.frameCount == lastClickFrame)
+            return;
+        lastClickFrame = Time.frameCount;
+
         if (inputSystem != null)
         {
             inputSystem.TriggerAction(CurrentAction);

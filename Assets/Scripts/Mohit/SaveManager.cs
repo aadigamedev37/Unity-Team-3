@@ -14,29 +14,80 @@ namespace Mohit.MetaSystems
 
     public class SaveManager : MonoBehaviour
     {
-        public static SaveManager Instance { get; private set; }
+        private static SaveManager _instance;
+        public static SaveManager Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = FindAnyObjectByType<SaveManager>();
+                }
+                return _instance;
+            }
+            set => _instance = value;
+        }
 
         public const int TotalLevels = 15;
 
         public event Action OnGameCompleted;
 
-        public bool IsGameCompleted => _data.completedLevels.Contains(TotalLevels);
+        public bool IsGameCompleted
+        {
+            get
+            {
+                EnsureDataLoaded();
+                return _data.completedLevels.Contains(TotalLevels);
+            }
+        }
 
         private SaveData _data;
         private string SavePath => Path.Combine(Application.persistentDataPath, "savedata.json");
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void AutoInitialize()
+        {
+            if (Instance == null)
+            {
+                GameObject smObj = new GameObject("SaveManager");
+                smObj.AddComponent<SaveManager>();
+            }
+        }
+
         private void Awake()
         {
-            if (Instance != null && Instance != this)
+            if (_instance != null && _instance != this)
             {
-                Destroy(gameObject);
+                if (Application.isPlaying)
+                    Destroy(gameObject);
+                else
+                    DestroyImmediate(gameObject);
                 return;
             }
 
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
+            _instance = this;
+            if (Application.isPlaying)
+            {
+                DontDestroyOnLoad(gameObject);
+            }
 
             LoadData();
+        }
+
+        private void OnDestroy()
+        {
+            if (_instance == this)
+            {
+                _instance = null;
+            }
+        }
+
+        public void EnsureDataLoaded()
+        {
+            if (_data == null)
+            {
+                LoadData();
+            }
         }
 
         public void LoadData()
@@ -118,16 +169,19 @@ namespace Mohit.MetaSystems
 
         public bool IsLevelUnlocked(int levelNumber)
         {
+            EnsureDataLoaded();
             return _data.unlockedLevels.Contains(levelNumber);
         }
 
         public bool IsLevelCompleted(int levelNumber)
         {
+            EnsureDataLoaded();
             return _data.completedLevels.Contains(levelNumber);
         }
 
         public void CompleteLevel(int levelNumber)
         {
+            EnsureDataLoaded();
             if (levelNumber < 1 || levelNumber > TotalLevels)
             {
                 Debug.LogWarning($"SaveManager: Ignoring CompleteLevel({levelNumber}), out of range.");
@@ -160,6 +214,7 @@ namespace Mohit.MetaSystems
 
         public int GetHighestUnlockedLevel()
         {
+            EnsureDataLoaded();
             int highest = 1;
             foreach (int lvl in _data.unlockedLevels)
             {

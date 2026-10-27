@@ -16,7 +16,7 @@ public class RecoverHandler : MonoBehaviour
     [SerializeField] private int requiredTaps = 1;
 
     [Tooltip("Time limit in seconds to escape the trap before shadow destruction.")]
-    [SerializeField] private float timeLimit = 2.0f;
+    [SerializeField] private float timeLimit = 3.5f;
 
     [Tooltip("Whether to enforce a strict countdown timer while trapped.")]
     [SerializeField] private bool useTimeLimit = true;
@@ -85,14 +85,48 @@ public class RecoverHandler : MonoBehaviour
         }
     }
 
+    public void SetStateMachine(PlayerShadowStateMachine sm)
+    {
+        if (stateMachine != null)
+        {
+            stateMachine.OnStateChanged -= HandleStateChanged;
+        }
+
+        stateMachine = sm;
+
+        if (stateMachine != null)
+        {
+            stateMachine.OnStateChanged -= HandleStateChanged;
+            stateMachine.OnStateChanged += HandleStateChanged;
+            if (stateMachine.CurrentState == PlayerShadowState.Trapped)
+            {
+                isTrapped = true;
+            }
+        }
+    }
+
     /// <summary>
     /// Processes a single recover tap attempt.
     /// Can be wired directly to InputSystem action or button press.
     /// </summary>
     public bool ProcessRecoverTap()
     {
+        if (stateMachine == null)
+        {
+            stateMachine = GetComponent<PlayerShadowStateMachine>() ?? FindAnyObjectByType<PlayerShadowStateMachine>();
+        }
+
         if (!isTrapped)
-            return false;
+        {
+            if (stateMachine != null && stateMachine.CurrentState == PlayerShadowState.Trapped)
+            {
+                isTrapped = true;
+            }
+            else
+            {
+                return false;
+            }
+        }
 
         currentTaps++;
         Debug.Log($"RecoverHandler: Tap registered ({currentTaps}/{requiredTaps}).");
