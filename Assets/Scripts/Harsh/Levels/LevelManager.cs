@@ -24,6 +24,38 @@ public class LevelManager : MonoBehaviour
     // Other systems can check this, but only LevelManager can change it.
     public bool IsLoading { get; private set; }
 
+    private static LevelManager instance;
+    public static LevelManager Instance
+    {
+        get
+        {
+            if (instance == null)
+            {
+                instance = FindAnyObjectByType<LevelManager>();
+            }
+            return instance;
+        }
+        set => instance = value;
+    }
+
+    public IReadOnlyList<LevelConfig> Levels
+    {
+        get
+        {
+            EnsureAllLevelsConfigured();
+            return levels;
+        }
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void AutoInitialize()
+    {
+        if (instance == null)
+        {
+            GameObject lmObj = new GameObject("LevelManager");
+            lmObj.AddComponent<LevelManager>();
+        }
+    }
 
     /// <summary>
     /// Initializes the LevelManager when the object is created.
@@ -31,12 +63,22 @@ public class LevelManager : MonoBehaviour
     /// </summary>
     private void Awake()
     {
-        ValidateLevelConfiguration();
+        if (instance != null && instance != this && Application.isPlaying)
+        {
+            Destroy(gameObject);
+            return;
+        }
 
-        // Find and store the configuration for the starting level.
+        instance = this;
+        if (Application.isPlaying)
+        {
+            DontDestroyOnLoad(gameObject);
+        }
+
+        EnsureAllLevelsConfigured();
+        ValidateLevelConfiguration();
         CurrentLevel = GetLevelById(startingLevelId);
 
-        // Warn us if the configured starting level does not exist.
         if (CurrentLevel == null)
         {
             Debug.LogError(
@@ -45,6 +87,45 @@ public class LevelManager : MonoBehaviour
         }
     }
 
+    private void OnDestroy()
+    {
+        if (instance == this)
+        {
+            instance = null;
+        }
+    }
+
+    private void EnsureAllLevelsConfigured()
+    {
+        if (levels == null) levels = new List<LevelConfig>();
+
+#if UNITY_EDITOR
+        string[] guids = UnityEditor.AssetDatabase.FindAssets("t:LevelConfig");
+        foreach (string guid in guids)
+        {
+            string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+            LevelConfig cfg = UnityEditor.AssetDatabase.LoadAssetAtPath<LevelConfig>(path);
+            if (cfg != null && !levels.Contains(cfg))
+            {
+                levels.Add(cfg);
+            }
+        }
+#endif
+
+        for (int i = 1; i <= 15; i++)
+        {
+            if (GetLevelById(i) == null)
+            {
+                LevelConfig runtimeConfig = ScriptableObject.CreateInstance<LevelConfig>();
+                string sceneName = i == 1 ? "M1_CriticalTechnicalProof" : $"L{i:02d}_Blockout";
+                runtimeConfig.name = $"RuntimeLevel_{i:02d}";
+                typeof(LevelConfig).GetField("levelId", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(runtimeConfig, i);
+                typeof(LevelConfig).GetField("displayName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(runtimeConfig, $"Level {i:02d}");
+                typeof(LevelConfig).GetField("sceneName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(runtimeConfig, sceneName);
+                levels.Add(runtimeConfig);
+            }
+        }
+    }
 
     /// <summary>
     /// Finds a LevelConfig using its unique level ID.

@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
+using StealMan.Core;
 
 namespace Mohit.MetaSystems
 {
@@ -20,22 +21,33 @@ namespace Mohit.MetaSystems
         {
             if (SaveManager.Instance == null)
             {
-                Debug.LogError("LevelSelectUI: SaveManager instance not found.");
-                return;
+                Debug.LogWarning("LevelSelectUI: SaveManager instance not found.");
             }
 
             PopulateLevelButtons();
         }
 
-        private void PopulateLevelButtons()
+        private void OnEnable()
         {
-            // Clear any existing buttons first (safe if this is called again later)
+            if (buttonContainer != null && buttonContainer.childCount > 0)
+            {
+                PopulateLevelButtons();
+            }
+        }
+
+        public void PopulateLevelButtons()
+        {
+            if (buttonContainer == null || levelButtonPrefab == null)
+                return;
+
+            // Clear any existing buttons first
             foreach (Transform child in buttonContainer)
             {
                 Destroy(child.gameObject);
             }
 
-            for (int level = 1; level <= SaveManager.TotalLevels; level++)
+            int total = SaveManager.TotalLevels;
+            for (int level = 1; level <= total; level++)
             {
                 GameObject buttonObj = Instantiate(levelButtonPrefab, buttonContainer);
                 SetupButton(buttonObj, level);
@@ -47,8 +59,8 @@ namespace Mohit.MetaSystems
             Button button = buttonObj.GetComponent<Button>();
             TMP_Text label = buttonObj.GetComponentInChildren<TMP_Text>();
 
-            bool isUnlocked = SaveManager.Instance.IsLevelUnlocked(levelNumber);
-            bool isCompleted = SaveManager.Instance.IsLevelCompleted(levelNumber);
+            bool isUnlocked = SaveManager.Instance != null && SaveManager.Instance.IsLevelUnlocked(levelNumber);
+            bool isCompleted = SaveManager.Instance != null && SaveManager.Instance.IsLevelCompleted(levelNumber);
 
             if (label != null)
             {
@@ -65,23 +77,40 @@ namespace Mohit.MetaSystems
             }
         }
 
-        // In LevelSelectUI.cs — replace OnLevelButtonPressed with:
+        // MOH-012: Connect LevelSelectUI to GameManager and LevelManager.LoadLevel API
         private void OnLevelButtonPressed(int levelNumber)
         {
-            LevelManager levelManager = FindAnyObjectByType<LevelManager>();
-
-            if (levelManager != null)
+            if (SaveManager.Instance != null && !SaveManager.Instance.IsLevelUnlocked(levelNumber))
             {
-                levelManager.LoadLevel(levelNumber);
+                Debug.LogWarning($"LevelSelectUI: Level {levelNumber} is locked.");
+                return;
+            }
+
+            Debug.Log($"LevelSelectUI: Launching level {levelNumber}...");
+
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.LoadLevel(levelNumber);
             }
             else
             {
-                Debug.LogError("LevelSelectUI: No LevelManager found in the current scene. " +
-                                "Check with Harsh/Aditya on how LevelManager persists across scenes.");
+                LevelManager levelManager = LevelManager.Instance ?? FindAnyObjectByType<LevelManager>();
+                if (levelManager != null)
+                {
+                    levelManager.LoadLevel(levelNumber);
+                }
+                else
+                {
+                    string sceneName = GameManager.GetSceneNameForLevel(levelNumber);
+                    if (SceneFader.Instance != null)
+                        SceneFader.Instance.LoadScene(sceneName);
+                    else
+                        SceneManager.LoadScene(sceneName);
+                }
             }
         }
 
-        // Hook this to a "Back" button if you add one
+        // Hook this to a "Back" button
         public void OnBackPressed()
         {
             if (SceneFader.Instance != null)

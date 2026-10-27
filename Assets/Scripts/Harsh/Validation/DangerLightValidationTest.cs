@@ -40,4 +40,6 @@ public class DangerLightValidationTest : MonoBehaviour, IShadowController
     public void Stop() { }
 
     public void Reset() { }
+
+    public void HandleMovement(Vector2 input) { }
 }

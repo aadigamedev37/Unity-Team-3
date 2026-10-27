@@ -2,6 +2,7 @@ public enum PlayerShadowState
 {
    Attached,
    Detached,
-   Reuniting
+   Reuniting,
+   Trapped
 
 }
