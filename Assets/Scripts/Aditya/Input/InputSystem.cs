@@ -17,7 +17,11 @@ public enum InputAction
 public class InputSystem : MonoBehaviour
 {
     [SerializeField] private InputTarget activeTarget = InputTarget.Player;
+<<<<<<< Updated upstream
     [SerializeField] private VirtualJoystick virtualJoystick;
+=======
+    //[SerializeField] private VirtualJoystick virtualJoystick;
+>>>>>>> Stashed changes
     [SerializeField] private PlayerShadowStateMachine stateMachine;
 
     public Vector2 MoveInput { get; private set; }
@@ -41,6 +45,7 @@ public class InputSystem : MonoBehaviour
         OnAction -= HandleAction;
     }
 
+<<<<<<< Updated upstream
     private void Update()
     {
         if (virtualJoystick != null)
@@ -53,6 +58,20 @@ public class InputSystem : MonoBehaviour
         }
         Debug.Log("MoveInput: " + MoveInput);
     }
+=======
+    //private void Update()
+    //{
+    //    if (virtualJoystick != null)
+    //    {
+    //        MoveInput = virtualJoystick.Direction;
+    //    }
+    //    else
+    //    {
+    //        MoveInput = Vector2.zero;
+    //    }
+
+    //}
+>>>>>>> Stashed changes
 
     public void TriggerAction(InputAction action)
     {
