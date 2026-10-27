@@ -54,4 +54,8 @@ public class TrapLightValidationTest : MonoBehaviour, IShadowController
     public void Reset()
     {
     }
+
+    public void HandleMovement(Vector2 input)
+    {
+    }
 }

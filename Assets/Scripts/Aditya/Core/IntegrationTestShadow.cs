@@ -21,4 +21,9 @@ public class IntegrationTestShadow : MonoBehaviour, IShadowController
     {
         Debug.Log("TEST SHADOW: Reset");
     }
+
+    public void HandleMovement(Vector2 input)
+    {
+        Debug.Log("TEST SHADOW: HandleMovement: " + input);
+    }
 }

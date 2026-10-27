@@ -123,7 +123,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 3519702689669934003}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9e8781304d9361c4e964033d7a8f6b93, type: 3}
+  m_Script: {fileID: 11500000, guid: 434992cb38941f546a4b8662141c8590, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StealableDrawbridge
   currentState: 0

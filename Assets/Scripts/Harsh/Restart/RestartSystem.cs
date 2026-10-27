@@ -8,33 +8,49 @@ using UnityEngine;
 public class RestartSystem : MonoBehaviour
 {
     private LevelManager levelManager;
+    private bool isRestarting = false;
+
+    private void OnDisable()
+    {
+        isRestarting = false;
+    }
 
     /// <summary>
     /// Restarts the level currently managed by LevelManager.
     /// </summary>
     public bool RestartCurrentLevel()
     {
+        if (isRestarting)
+            return false;
+
+        isRestarting = true;
+
         if (levelManager == null)
         {
-            levelManager = FindFirstObjectByType<LevelManager>();
+            levelManager = FindAnyObjectByType<LevelManager>();
         }
 
-        if (levelManager == null)
+        if (levelManager != null && levelManager.CurrentLevel != null)
         {
-            Debug.LogError(
-                "RestartSystem could not find a LevelManager.",
-                this);
-            return false;
+            return levelManager.LoadLevel(levelManager.CurrentLevel.LevelId);
         }
 
-        if (levelManager.CurrentLevel == null)
+        // Fallback for standalone/integration scenes without full LevelConfig
+        var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        if (activeScene.buildIndex >= 0)
         {
-            Debug.LogError(
-                "Cannot restart because LevelManager has no current level.",
-                this);
-            return false;
+            UnityEngine.SceneManagement.SceneManager.LoadScene(activeScene.buildIndex);
+        }
+        else
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene(activeScene.name);
         }
 
-        return levelManager.LoadLevel(levelManager.CurrentLevel.LevelId);
+        return true;
+    }
+
+    public void ResetRestartState()
+    {
+        isRestarting = false;
     }
 }

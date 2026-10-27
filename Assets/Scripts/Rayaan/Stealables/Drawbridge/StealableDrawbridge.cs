@@ -1,49 +1,48 @@
 using UnityEngine;
 
+/// <summary>
+/// A drawbridge obstacle that lowers into a walkable crossing when its shadow is stolen.
+/// Extends StealableBase following Rayaan's interaction framework.
+/// </summary>
 public class StealableDrawbridge : StealableBase
 {
-    [Header("Drawbridge References")]
-    [SerializeField]
-    private Collider drawbridgeCollider;
+    [Header("Bridge References")]
+    [SerializeField] private Collider walkableCollider;
+    [SerializeField] private Transform bridgeArm;
+
+    [Header("Rotation Configuration")]
+    [SerializeField] private Vector3 raisedEuler = new Vector3(-60f, 0f, 0f);
+    [SerializeField] private Vector3 loweredEuler = Vector3.zero;
 
     private void Awake()
     {
-        if (drawbridgeCollider == null)
-        {
-            Debug.LogError(
-                "StealableDrawbridge: Physical Drawbridge Collider is NOT assigned!",
-                this
-            );
-
-            return;
-        }
-
         ApplyCurrentState();
     }
 
     protected override StealableState GetStateAfterSteal()
     {
+        // When stolen, the bridge drops down (becomes usable/walkable)
         return StealableState.Ghost;
     }
 
     protected override void OnStateChanged(StealableState newState)
     {
         ApplyCurrentState();
-
-        Debug.Log("Drawbridge State Changed To: " + newState);
+        Debug.Log("StealableDrawbridge: State changed to " + newState);
     }
 
     private void ApplyCurrentState()
     {
-        if (drawbridgeCollider == null)
-            return;
+        bool isLowered = IsGhost;
 
-        drawbridgeCollider.enabled = !IsGhost;
-    }
+        if (walkableCollider != null)
+        {
+            walkableCollider.enabled = isLowered;
+        }
 
-    // TEMPORARY TEST ONLY
-    private void Update()
-    {
-        
+        if (bridgeArm != null)
+        {
+            bridgeArm.localEulerAngles = isLowered ? loweredEuler : raisedEuler;
+        }
     }
 }

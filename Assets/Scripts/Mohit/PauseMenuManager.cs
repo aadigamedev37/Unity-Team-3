@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using StealMan.Core;
 
 namespace Mohit.MetaSystems
 {
@@ -18,55 +20,154 @@ namespace Mohit.MetaSystems
             Time.timeScale = 1f;      // safety: never start a scene paused
 
             if (pausePanel != null)
+            {
                 pausePanel.SetActive(false);
+                BindButtons();
+            }
+        }
+
+        private void OnEnable()
+        {
+            SubscribeToGameManager();
+        }
+
+        private void OnDisable()
+        {
+            UnsubscribeFromGameManager();
+        }
+
+        public void SubscribeToGameManager(GameManager gm = null)
+        {
+            var mgr = gm ?? GameManager.Instance;
+            if (mgr != null)
+            {
+                mgr.OnPaused -= HandleGameManagerPaused;
+                mgr.OnPaused += HandleGameManagerPaused;
+            }
+        }
+
+        public void UnsubscribeFromGameManager(GameManager gm = null)
+        {
+            var mgr = gm ?? GameManager.Instance;
+            if (mgr != null)
+            {
+                mgr.OnPaused -= HandleGameManagerPaused;
+            }
         }
 
         private void OnDestroy()
         {
+            UnsubscribeFromGameManager();
+
             if (Instance == this)
                 Instance = null;
         }
 
-        // TODO (MOH-009): Replace manual pause trigger with Aditya's GameManager.OnPaused event once confirmed
+        private void HandleGameManagerPaused(bool paused)
+        {
+            isPaused = paused;
+            if (pausePanel != null)
+                pausePanel.SetActive(paused);
+        }
+
+        private void BindButtons()
+        {
+            if (pausePanel == null) return;
+
+            Button[] buttons = pausePanel.GetComponentsInChildren<Button>(true);
+            foreach (var btn in buttons)
+            {
+                string bName = btn.gameObject.name.ToLower();
+                if (bName.Contains("resume"))
+                {
+                    btn.onClick.RemoveListener(OnResumePressed);
+                    btn.onClick.AddListener(OnResumePressed);
+                }
+                else if (bName.Contains("restart"))
+                {
+                    btn.onClick.RemoveListener(OnRestartPressed);
+                    btn.onClick.AddListener(OnRestartPressed);
+                }
+                else if (bName.Contains("mainmenu") || bName.Contains("menu"))
+                {
+                    btn.onClick.RemoveListener(OnMainMenuPressed);
+                    btn.onClick.AddListener(OnMainMenuPressed);
+                }
+            }
+        }
+
+        // MOH-009: Delegate pause actions to GameManager
         public void TogglePause()
         {
-            if (isPaused) Resume();
-            else Pause();
+            if (GameManager.Instance != null)
+                GameManager.Instance.TogglePause();
+            else
+            {
+                if (isPaused) Resume();
+                else Pause();
+            }
         }
 
         public void Pause()
         {
-            isPaused = true;
-            Time.timeScale = 0f;
-            if (pausePanel != null)
-                pausePanel.SetActive(true);
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.Pause();
+            }
+            else
+            {
+                isPaused = true;
+                Time.timeScale = 0f;
+                if (pausePanel != null)
+                    pausePanel.SetActive(true);
+            }
         }
 
         public void Resume()
         {
-            isPaused = false;
-            Time.timeScale = 1f;
-            if (pausePanel != null)
-                pausePanel.SetActive(false);
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.Resume();
+            }
+            else
+            {
+                isPaused = false;
+                Time.timeScale = 1f;
+                if (pausePanel != null)
+                    pausePanel.SetActive(false);
+            }
         }
 
         // Hook this to Pause panel's "Restart" button
         public void OnRestartPressed()
         {
             Time.timeScale = 1f; // always reset before reloading
-            Scene currentScene = SceneManager.GetActiveScene();
-            SceneManager.LoadScene(currentScene.name);
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.RestartCurrentLevel();
+            }
+            else
+            {
+                Scene currentScene = SceneManager.GetActiveScene();
+                SceneManager.LoadScene(currentScene.name);
+            }
         }
 
         // Hook this to Pause panel's "Main Menu" button
         public void OnMainMenuPressed()
         {
             Time.timeScale = 1f; // always reset before leaving
-
-            if (SceneFader.Instance != null)
-                SceneFader.Instance.LoadScene("MainMenu");
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.LoadMainMenu();
+            }
             else
-                SceneManager.LoadScene("MainMenu");
+            {
+                if (SceneFader.Instance != null)
+                    SceneFader.Instance.LoadScene("MainMenu");
+                else
+                    SceneManager.LoadScene("MainMenu");
+            }
         }
 
         // Hook this to Pause panel's "Resume" button
