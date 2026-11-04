@@ -229,7 +229,6 @@ public class InputSystem : MonoBehaviour
             }
         }
     }
-
     private int lastActionFrame = -1;
     private InputAction lastAction;
 
