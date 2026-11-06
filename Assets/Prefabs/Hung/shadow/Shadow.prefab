@@ -327,7 +327,7 @@ SkinnedMeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1432667774379746011}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -878,9 +878,10 @@ GameObject:
   - component: {fileID: 1705697233040862750}
   - component: {fileID: 6161955021914864401}
   - component: {fileID: 2494154126492904741}
+  - component: {fileID: -4771182074387432508}
   m_Layer: 8
   m_Name: Shadow
-  m_TagString: Player
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1130,6 +1131,36 @@ MonoBehaviour:
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
+--- !u!114 &-4771182074387432508
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3508170809931255744}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b5a225eed43c294f9fe2e9fd058ddd3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurfaceTraversal
+  currentState: 0
+  surfaceProbe: {fileID: 0}
+  surfaceLayer:
+    serializedVersion: 2
+    m_Bits: 9
+  detectionDistance: 1.5
+  detectionRadius: 0.25
+  wallMoveSpeed: 3
+  wallOffset: 0.15
+  wallCheckDistance: 1
+  shadowController: {fileID: 7445290982140427806}
+  shadowInputs: {fileID: 6161955021914864401}
+  skeleton: {fileID: 470089018895415780}
+  skeletonAnimator: {fileID: 5103646006714186453}
+  footProbe: {fileID: 0}
+  topReachTolerance: 0.05
+  topForwardOffset: 0.6
+  cameraTarget: {fileID: 1595672087932905131}
 --- !u!1 &3557270010664157097
 GameObject:
   m_ObjectHideFlags: 0

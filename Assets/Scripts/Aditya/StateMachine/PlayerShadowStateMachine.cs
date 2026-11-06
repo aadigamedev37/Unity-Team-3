@@ -42,6 +42,7 @@ public class PlayerShadowStateMachine : MonoBehaviour
         }
 
         ChangeState(PlayerShadowState.Detached);
+        GameEvents.RaiseShadowDetached();
 
         Debug.Log("Shadow Detached");
         return true;
@@ -70,6 +71,7 @@ public class PlayerShadowStateMachine : MonoBehaviour
         }
 
         ChangeState(PlayerShadowState.Attached);
+        GameEvents.RaiseShadowRecalled();
 
         Debug.Log("Shadow Reunited");
         return true;
@@ -123,6 +125,7 @@ public class PlayerShadowStateMachine : MonoBehaviour
     public void ResetToAttached()
     {
         ChangeState(PlayerShadowState.Attached);
+        GameEvents.RaiseShadowRecalled();
         Debug.Log("PlayerShadowStateMachine: Reset to Attached.");
     }
 
