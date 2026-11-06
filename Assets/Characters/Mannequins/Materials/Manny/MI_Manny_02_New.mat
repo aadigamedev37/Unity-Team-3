@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:Export3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: MI_Manny_02_New
+  m_Shader: {fileID: 4800000, guid: dac1a000000014830674155062442455, type: 3}
+  m_ShaderKeywords: 
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - Material_Texture2D_0:
+        m_Texture: {fileID: 2800000, guid: dac1a000000009103636480890104170, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - Material_Texture2D_1:
+        m_Texture: {fileID: 2800000, guid: dac1a000000011145318903899496389, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - Material_Texture2D_2:
+        m_Texture: {fileID: 2800000, guid: dac1a000000009110961406274418132, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - Material_Texture2D_3:
+        m_Texture: {fileID: 2800000, guid: dac1a000000004285739988916641534, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - LogoPosX: -0.241000
+    - LogoPosY: 0.261333
+    - LogoScale: 0.075000
+    - EmissivePower: 1.000000
+    - MetalPaintMetallic: 0.000000
+    - MetalPaintRoughness: 0.100000
+    - Head_Cutout: 16.407043
+    - Scale: 99.141594
+    - _DstBlend: 0
+    - _SrcBlend: 1
+    - _UVSec: 0
+    - _ZWrite: 1
+    m_Colors:
+    - _Color: {r: 0.8, g: 0.8, b: 0.8, a: 1}
+    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - SelectionColor: {r: 0.000000, g: 0.000000, b: 0.000000, a: 0.000000}
+    - LogoTint: {r: 0.000000, g: 1.000000, b: 1.000000, a: 1.000000}
+    - Paint_Tint: {r: 0.921875, g: 0.921875, b: 0.921875, a: 1.000000}
+    - Blend_Offset: {r: 0.000000, g: 0.000000, b: -57.245098, a: 0.000000}
