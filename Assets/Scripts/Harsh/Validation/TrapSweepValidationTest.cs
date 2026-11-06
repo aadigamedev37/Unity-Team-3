@@ -65,33 +65,30 @@ public class TrapSweepValidationTest : MonoBehaviour
     }
 
     private void ValidateSweepReset()
+{
+    sweepingHazard.transform.localRotation =
+        initialRotation *
+        Quaternion.Euler(0f, 30f, 0f);
+
+    sweepingHazard.ResetSweep();
+
+    float difference = Quaternion.Angle(
+        sweepingHazard.transform.localRotation,
+        initialRotation);
+
+    if (difference < 0.01f)
     {
-        sweepingHazard.enabled = false;
-
-        sweepingHazard.transform.localRotation =
-            initialRotation *
-            Quaternion.Euler(0f, 30f, 0f);
-
-        sweepingHazard.ResetSweep();
-
-        float difference =
-            Quaternion.Angle(
-                sweepingHazard.transform.localRotation,
-                initialRotation);
-
-        if (difference < 0.01f)
-        {
-            Debug.Log(
-                "VALIDATION PASS: TrapLight sweep reset returned to its deterministic starting rotation.");
-        }
-        else
-        {
-            Debug.LogError(
-                $"VALIDATION FAIL: TrapLight sweep reset differed by {difference:F3} degrees.");
-        }
-
-        sweepingHazard.enabled = true;
+        Debug.Log(
+            "VALIDATION PASS: TrapLight sweep reset returned to its deterministic starting rotation.",
+            this);
     }
+    else
+    {
+        Debug.LogError(
+            $"VALIDATION FAIL: TrapLight sweep reset differed by {difference:F3} degrees.",
+            this);
+    }
+}
 
     private void ValidateTrapConfiguration()
     {

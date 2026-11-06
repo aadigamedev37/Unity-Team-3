@@ -23,7 +23,7 @@ public class SweepingHazardValidationTest : MonoBehaviour
 
         initialRotation = sweepingHazard.transform.localRotation;
 
-        sweepingHazard.enabled = false;
+        
 
         sweepingHazard.transform.localRotation =
             initialRotation * Quaternion.Euler(0f, 30f, 0f);

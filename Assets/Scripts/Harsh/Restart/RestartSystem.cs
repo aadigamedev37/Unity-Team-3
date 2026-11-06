@@ -1,52 +1,105 @@
+
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Handles restarting the currently active level.
-/// Keeps restart flow centralized so other systems do not
-/// need to manage scene reloads themselves.
+/// Uses LevelManager for managed levels and supports
+/// standalone test scenes when no LevelManager exists.
 /// </summary>
 public class RestartSystem : MonoBehaviour
 {
     private LevelManager levelManager;
-    private bool isRestarting = false;
+    private bool isRestarting;
+
+    private void OnEnable()
+    {
+        isRestarting = false;
+        SceneManager.sceneLoaded += HandleSceneLoaded;
+    }
 
     private void OnDisable()
     {
-        isRestarting = false;
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
     }
 
     /// <summary>
-    /// Restarts the level currently managed by LevelManager.
+    /// Restarts the currently active level.
     /// </summary>
     public bool RestartCurrentLevel()
     {
         if (isRestarting)
+        {
             return false;
+        }
+
+        levelManager = LevelManager.Instance;
+
+        if (levelManager != null)
+        {
+            if (levelManager.IsLoading)
+            {
+                Debug.LogWarning(
+                    "Cannot restart while a level transition is in progress.",
+                    this);
+                return false;
+            }
+
+            if (levelManager.CurrentLevel == null)
+            {
+                Debug.LogError(
+                    "Cannot restart because LevelManager has no current level.",
+                    this);
+                return false;
+            }
+
+            isRestarting = true;
+
+            bool requestAccepted = levelManager.LoadLevel(
+                levelManager.CurrentLevel.LevelId);
+
+            if (!requestAccepted)
+            {
+                isRestarting = false;
+            }
+
+            return requestAccepted;
+        }
+
+        // Fallback only for standalone scenes without a LevelManager.
+        Scene activeScene = SceneManager.GetActiveScene();
+
+        if (!activeScene.IsValid() || !activeScene.isLoaded)
+        {
+            Debug.LogError(
+                "Cannot restart because there is no valid active scene.",
+                this);
+            return false;
+        }
 
         isRestarting = true;
 
-        if (levelManager == null)
-        {
-            levelManager = FindAnyObjectByType<LevelManager>();
-        }
+        AsyncOperation operation = activeScene.buildIndex >= 0
+            ? SceneManager.LoadSceneAsync(activeScene.buildIndex)
+            : SceneManager.LoadSceneAsync(activeScene.name);
 
-        if (levelManager != null && levelManager.CurrentLevel != null)
+        if (operation == null)
         {
-            return levelManager.LoadLevel(levelManager.CurrentLevel.LevelId);
-        }
+            isRestarting = false;
 
-        // Fallback for standalone/integration scenes without full LevelConfig
-        var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-        if (activeScene.buildIndex >= 0)
-        {
-            UnityEngine.SceneManagement.SceneManager.LoadScene(activeScene.buildIndex);
-        }
-        else
-        {
-            UnityEngine.SceneManagement.SceneManager.LoadScene(activeScene.name);
+            Debug.LogError(
+                $"Could not start reloading scene '{activeScene.name}'.",
+                this);
+            return false;
         }
 
         return true;
+    }
+
+    private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        isRestarting = false;
+        levelManager = LevelManager.Instance;
     }
 
     public void ResetRestartState()
