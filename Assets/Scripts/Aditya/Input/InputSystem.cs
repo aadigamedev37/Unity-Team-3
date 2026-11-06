@@ -33,6 +33,12 @@ public class InputSystem : MonoBehaviour
     [SerializeField] private bool unlockCursorForMobileUI = true;
 
     private IShadowController shadowController;
+    private Vector2? inputOverride = null;
+
+    public void SetInputOverride(Vector2? overrideInput)
+    {
+        inputOverride = overrideInput;
+    }
 
     public Vector2 MoveInput { get; private set; }
     public InputTarget ActiveTarget => activeTarget;
@@ -143,7 +149,11 @@ public class InputSystem : MonoBehaviour
     private void Update()
     {
         Vector2 input = Vector2.zero;
-        if (virtualJoystick != null && virtualJoystick.Direction != Vector2.zero)
+        if (inputOverride.HasValue)
+        {
+            input = inputOverride.Value;
+        }
+        else if (virtualJoystick != null && virtualJoystick.Direction != Vector2.zero)
         {
             input = virtualJoystick.Direction;
         }
@@ -172,18 +182,18 @@ public class InputSystem : MonoBehaviour
             input = Vector2.ClampMagnitude(new Vector2(h, v), 1f);
         }
 
-        // Action hotkeys: Q (Hung's standard shadow toggle), Space, E
+        // Action hotkey: E (Only E handles Detach, Steal, Recall)
         bool actionPressed = false;
         if (UnityEngine.InputSystem.Keyboard.current != null)
         {
             var kb = UnityEngine.InputSystem.Keyboard.current;
-            actionPressed = kb.qKey.wasPressedThisFrame || kb.eKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame;
+            actionPressed = kb.eKey.wasPressedThisFrame;
         }
         if (!actionPressed)
         {
             try
             {
-                actionPressed = Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space);
+                actionPressed = Input.GetKeyDown(KeyCode.E);
             }
             catch { }
         }
@@ -191,6 +201,27 @@ public class InputSystem : MonoBehaviour
         if (actionPressed)
         {
             TriggerContextualAction();
+        }
+
+        // Jump hotkey: Space Bar (Triggers Jump for active character)
+        bool jumpPressed = false;
+        if (UnityEngine.InputSystem.Keyboard.current != null)
+        {
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            jumpPressed = kb.spaceKey.wasPressedThisFrame;
+        }
+        if (!jumpPressed)
+        {
+            try
+            {
+                jumpPressed = Input.GetKeyDown(KeyCode.Space);
+            }
+            catch { }
+        }
+
+        if (jumpPressed)
+        {
+            TriggerJump();
         }
 #endif
 
@@ -203,6 +234,18 @@ public class InputSystem : MonoBehaviour
         else if (activeTarget == InputTarget.Shadow && shadowController != null)
         {
             shadowController.HandleMovement(MoveInput);
+        }
+    }
+
+    public void TriggerJump()
+    {
+        if (activeTarget == InputTarget.Player && playerController != null)
+        {
+            playerController.Jump();
+        }
+        else if (activeTarget == InputTarget.Shadow && shadowController != null)
+        {
+            shadowController.Jump();
         }
     }
 
@@ -235,7 +278,7 @@ public class InputSystem : MonoBehaviour
     public void TriggerAction(InputAction action)
     {
         // Prevent accidental double-trigger in the same frame (e.g. duplicate click or Detach immediately followed by Recall)
-        if (Application.isPlaying && Time.frameCount == lastActionFrame && (action == lastAction || (lastAction == InputAction.Detach && action == InputAction.Recall)))
+        if (Application.isPlaying && Time.frameCount == lastActionFrame && action == lastAction)
         {
             return;
         }

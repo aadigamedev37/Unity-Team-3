@@ -172,7 +172,29 @@ namespace StealMan.Core
             }
 
             // 2. Fire the authoritative level completion event
+            GameEvents.RaiseLevelComplete(levelId);
             OnLevelComplete?.Invoke(levelId);
+
+            // 3. Smooth transition to next level or level select
+            StartCoroutine(AdvanceToNextLevelRoutine(levelId));
+        }
+
+        private System.Collections.IEnumerator AdvanceToNextLevelRoutine(int completedLevelId)
+        {
+            yield return new WaitForSeconds(1.2f);
+            isLevelCompleting = false;
+
+            if (completedLevelId < 3)
+            {
+                int nextLevelId = completedLevelId + 1;
+                Debug.Log($"[GameManager] Advancing to Level {nextLevelId}...");
+                LoadLevel(nextLevelId);
+            }
+            else
+            {
+                Debug.Log("[GameManager] Level 3 completed! Returning to Level Select.");
+                LoadLevelSelect();
+            }
         }
 
         /// <summary>
@@ -284,9 +306,13 @@ namespace StealMan.Core
 
         public static string GetSceneNameForLevel(int levelId)
         {
-            if (levelId == 1)
-                return "M1_CriticalTechnicalProof";
-            return $"L{levelId:D2}_Blockout";
+            switch (levelId)
+            {
+                case 1: return "L01_Integration";
+                case 2: return "L02_Integration";
+                case 3: return "L03_Integration";
+                default: return $"L{levelId:D2}_Blockout";
+            }
         }
 
         #endregion

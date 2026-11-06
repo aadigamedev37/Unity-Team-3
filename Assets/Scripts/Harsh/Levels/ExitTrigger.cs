@@ -1,5 +1,6 @@
-using UnityEngine;
+﻿using UnityEngine;
 using StealMan.Core;
+using Mohit.MetaSystems;
 
 /// <summary>
 /// Detects the Player entering the level exit
@@ -31,11 +32,17 @@ public class ExitTrigger : MonoBehaviour
 
         hasTriggered = true;
         Debug.Log($"ExitTrigger: Player reached exit for Level {levelId}!");
+        GameEvents.RaiseLevelComplete(levelId);
 
         if (GameManager.Instance != null)
         {
             GameManager.Instance.CompleteLevel(levelId);
             return;
+        }
+
+        if (SaveManager.Instance != null)
+        {
+            SaveManager.Instance.CompleteLevel(levelId);
         }
 
         // Fallback to direct LevelManager if GameManager is not present
@@ -46,7 +53,7 @@ public class ExitTrigger : MonoBehaviour
 
         if (levelManager != null)
         {
-            levelManager.LoadNextLevel();
+            StartCoroutine(DirectLoadNextLevelRoutine());
         }
         else
         {
@@ -54,12 +61,20 @@ public class ExitTrigger : MonoBehaviour
         }
     }
 
+    private System.Collections.IEnumerator DirectLoadNextLevelRoutine()
+    {
+        yield return new WaitForSeconds(1.2f);
+        if (levelId < 3 && levelManager != null)
+        {
+            levelManager.LoadLevel(levelId + 1);
+        }
+    }
+
     private bool IsPlayer(Collider other)
     {
         // Explicitly reject Shadow entity
         if (other.name.ToLower().Contains("shadow") || 
-            other.GetComponentInParent<IShadowController>() != null ||
-            other.CompareTag("Shadow"))
+            other.GetComponentInParent<IShadowController>() != null)
         {
             return false;
         }

@@ -74,6 +74,15 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/LevelBlockoutReference/L15_Blockout.unity
     guid: e67ba4eb04336714882c3a4f334813f7
+  - enabled: 1
+    path: Assets/Scenes/LevelBlockoutReference/L01_Integration.unity
+    guid: 78efaf5d907caf649853c77e8edce19c
+  - enabled: 1
+    path: Assets/Scenes/LevelBlockoutReference/L02_Integration.unity
+    guid: 23591bf225e79104aa33ad0e5fc33dd5
+  - enabled: 1
+    path: Assets/Scenes/LevelBlockoutReference/L03_Integration.unity
+    guid: 157ade0773e92424dbdc009f9dac6641
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
