@@ -2874,6 +2874,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: Shadow
       objectReference: {fileID: 0}
+    - target: {fileID: 6161955021914864401, guid: 6fa31faf1ed7fea4d9574d53ef3b69eb, type: 3}
+      propertyPath: cursorLocked
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6161955021914864401, guid: 6fa31faf1ed7fea4d9574d53ef3b69eb, type: 3}
+      propertyPath: cursorInputForLook
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7445290982140427806, guid: 6fa31faf1ed7fea4d9574d53ef3b69eb, type: 3}
+      propertyPath: LockCameraPosition
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

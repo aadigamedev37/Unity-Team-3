@@ -6,6 +6,7 @@ public class PlayerShadowStateMachine : MonoBehaviour
     public PlayerShadowState CurrentState { get; private set; }
 
     public event Action<PlayerShadowState> OnStateChanged;
+    public ShadowManager ShadowManager;
 
     private void Awake()
     {
@@ -42,7 +43,7 @@ public class PlayerShadowStateMachine : MonoBehaviour
         }
 
         ChangeState(PlayerShadowState.Detached);
-
+        ShadowManager.SpawnShadow();
         Debug.Log("Shadow Detached");
         return true;
     }
@@ -56,7 +57,7 @@ public class PlayerShadowStateMachine : MonoBehaviour
         }
 
         ChangeState(PlayerShadowState.Reuniting);
-
+        ShadowManager.ExitShadow();
         Debug.Log("Shadow Reuniting");
         return true;
     }
