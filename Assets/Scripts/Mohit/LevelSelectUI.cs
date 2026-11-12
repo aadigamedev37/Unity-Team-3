@@ -9,9 +9,8 @@ namespace Mohit.MetaSystems
     public class LevelSelectUI : MonoBehaviour
     {
         [Header("Setup")]
-        [SerializeField] private Transform buttonContainer;   // Parent with a Grid/Vertical Layout Group
-        [SerializeField] private GameObject levelButtonPrefab; // A single Button prefab with a TMP text child
-
+        [SerializeField] private Transform[] phaseContainers = new Transform[3];   // the three Cards objects
+        [SerializeField] private GameObject levelButtonPrefab;                    // the LevelCard prefab
         [Header("Colors")]
         [SerializeField] private Color unlockedColor = Color.white;
         [SerializeField] private Color lockedColor = new Color(0.4f, 0.4f, 0.4f, 1f);
@@ -29,27 +28,28 @@ namespace Mohit.MetaSystems
 
         private void OnEnable()
         {
-            if (buttonContainer != null && buttonContainer.childCount > 0)
-            {
-                PopulateLevelButtons();
-            }
+            PopulateLevelButtons();
         }
 
         public void PopulateLevelButtons()
         {
-            if (buttonContainer == null || levelButtonPrefab == null)
+            if (phaseContainers == null || levelButtonPrefab == null)
                 return;
 
-            // Clear any existing buttons first
-            foreach (Transform child in buttonContainer)
+            foreach (Transform container in phaseContainers)
             {
-                Destroy(child.gameObject);
+                if (container == null) continue;
+                foreach (Transform child in container)
+                    Destroy(child.gameObject);
             }
 
             int total = SaveManager.TotalLevels;
             for (int level = 1; level <= total; level++)
             {
-                GameObject buttonObj = Instantiate(levelButtonPrefab, buttonContainer);
+                int phase = Mathf.Clamp((level - 1) / 5, 0, phaseContainers.Length - 1);
+                if (phaseContainers[phase] == null) continue;
+
+                GameObject buttonObj = Instantiate(levelButtonPrefab, phaseContainers[phase]);
                 SetupButton(buttonObj, level);
             }
         }
@@ -57,22 +57,19 @@ namespace Mohit.MetaSystems
         private void SetupButton(GameObject buttonObj, int levelNumber)
         {
             Button button = buttonObj.GetComponent<Button>();
-            TMP_Text label = buttonObj.GetComponentInChildren<TMP_Text>();
+            LevelCardView view = buttonObj.GetComponent<LevelCardView>();
 
             bool isUnlocked = SaveManager.Instance != null && SaveManager.Instance.IsLevelUnlocked(levelNumber);
             bool isCompleted = SaveManager.Instance != null && SaveManager.Instance.IsLevelCompleted(levelNumber);
 
-            if (label != null)
-            {
-                label.text = levelNumber.ToString("D2"); // "01", "02", etc.
-                label.color = isCompleted ? completedColor : (isUnlocked ? unlockedColor : lockedColor);
-            }
+            if (view != null)
+                view.Bind(levelNumber, isUnlocked, isCompleted, 0, 0f);   // stars and time arrive in step 5
 
             button.interactable = isUnlocked;
 
             if (isUnlocked)
             {
-                int capturedLevel = levelNumber; // avoid closure bug in loops
+                int capturedLevel = levelNumber;   // avoid the closure bug in loops
                 button.onClick.AddListener(() => OnLevelButtonPressed(capturedLevel));
             }
         }

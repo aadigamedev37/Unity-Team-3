@@ -17,8 +17,6 @@ namespace Mohit.MetaSystems
 
         [Header("Buttons inside the panel")]
         [SerializeField] private Button muteButton;
-        [SerializeField] private Button qualityButton;
-        [SerializeField] private Button fpsButton;
         [SerializeField] private Button resetSettingsButton;
         [SerializeField] private Button resetProgressButton;
         [SerializeField] private Button closeButton;
@@ -30,8 +28,6 @@ namespace Mohit.MetaSystems
 
         private CanvasGroup canvasGroup;
         private TMP_Text muteLabel;
-        private TMP_Text qualityLabel;
-        private TMP_Text fpsLabel;
 
         private void Awake()
         {
@@ -49,8 +45,6 @@ namespace Mohit.MetaSystems
             }
 
             muteLabel = muteButton.GetComponentInChildren<TMP_Text>();
-            qualityLabel = qualityButton.GetComponentInChildren<TMP_Text>();
-            fpsLabel = fpsButton.GetComponentInChildren<TMP_Text>();
 
             Refresh();
 
@@ -59,12 +53,6 @@ namespace Mohit.MetaSystems
             sfxSlider.onValueChanged.AddListener(s.SetSfxVolume);
 
             muteButton.onClick.AddListener(() => { s.SetMuted(!s.IsMuted); Refresh(); });
-            qualityButton.onClick.AddListener(() =>
-            {
-                s.SetQuality((s.QualityLevel + 1) % QualitySettings.names.Length);
-                Refresh();
-            });
-            fpsButton.onClick.AddListener(() => { s.SetFps60(!s.Fps60); Refresh(); });
             resetSettingsButton.onClick.AddListener(() => { s.ResetToDefaults(); Refresh(); });
 
             resetProgressButton.onClick.AddListener(() => resetConfirmPanel.SetActive(true));
@@ -113,8 +101,6 @@ namespace Mohit.MetaSystems
             sfxSlider.SetValueWithoutNotify(s.SfxVolume);
 
             muteLabel.text = "Mute: " + (s.IsMuted ? "ON" : "OFF");
-            qualityLabel.text = "Quality: " + QualitySettings.names[s.QualityLevel];
-            fpsLabel.text = "Frame Rate: " + (s.Fps60 ? "60" : "30");
         }
 
         private void SetVisible(bool visible)

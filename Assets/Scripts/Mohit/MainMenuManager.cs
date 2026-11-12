@@ -30,7 +30,7 @@ namespace Mohit.MetaSystems
         public void OnPlayPressed()
         {
             int highestUnlocked = SaveManager.Instance != null ? SaveManager.Instance.GetHighestUnlockedLevel() : 1;
-            LoadLevel(highestUnlocked);
+            RunWithFade(() => LoadLevel(highestUnlocked));
         }
 
         // Hook this to your "Level Select" button
@@ -58,11 +58,24 @@ namespace Mohit.MetaSystems
         // Hook this to your "Quit" button
         public void OnQuitPressed()
         {
+            RunWithFade(QuitGame);
+        }
+
+        private void QuitGame()
+        {
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
 #else
-            Application.Quit();
+        Application.Quit();
 #endif
+        }
+
+        private void RunWithFade(System.Action action)
+        {
+            if (SceneFader.Instance != null)
+                SceneFader.Instance.FadeThen(action);
+            else
+                action();
         }
 
         // Loads the requested level via GameManager / LevelManager (MOH-012)
@@ -80,10 +93,7 @@ namespace Mohit.MetaSystems
             else
             {
                 string sceneName = GameManager.GetSceneNameForLevel(levelNumber);
-                if (SceneFader.Instance != null)
-                    SceneFader.Instance.LoadScene(sceneName);
-                else
-                    SceneManager.LoadScene(sceneName);
+                SceneManager.LoadScene(sceneName);
             }
         }
     }

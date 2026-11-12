@@ -34,6 +34,33 @@ namespace Mohit.MetaSystems
             StartCoroutine(FadeAndLoad(sceneName));
         }
 
+        // Fade to black, run any action (load a level, quit...), then fade back in once a new scene is active.
+        public void FadeThen(System.Action action)
+        {
+            if (isFading) return;
+            StartCoroutine(FadeThenRoutine(action));
+        }
+
+        private IEnumerator FadeThenRoutine(System.Action action)
+        {
+            isFading = true;
+            yield return Fade(0f, 1f);
+
+            Scene before = SceneManager.GetActiveScene();
+            action?.Invoke();
+
+            // If the action loaded a scene, wait for it (max 3 s), then fade back in.
+            float wait = 3f;
+            while (SceneManager.GetActiveScene() == before && wait > 0f)
+            {
+                wait -= Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return Fade(1f, 0f);
+            isFading = false;
+        }
+
         private IEnumerator FadeAndLoad(string sceneName)
         {
             isFading = true;
