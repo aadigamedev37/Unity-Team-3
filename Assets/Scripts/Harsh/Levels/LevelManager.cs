@@ -77,13 +77,45 @@ public class LevelManager : MonoBehaviour
 
         EnsureAllLevelsConfigured();
         ValidateLevelConfiguration();
-        CurrentLevel = GetLevelById(startingLevelId);
+        RefreshCurrentLevelFromActiveScene();
+        if (CurrentLevel == null)
+        {
+            CurrentLevel = GetLevelById(startingLevelId);
+        }
 
         if (CurrentLevel == null)
         {
             Debug.LogError(
                 $"LevelManager could not find starting level with ID {startingLevelId}.",
                 this);
+        }
+    }
+
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += HandleSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
+    }
+
+    private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        RefreshCurrentLevelFromActiveScene();
+    }
+
+    public void RefreshCurrentLevelFromActiveScene()
+    {
+        string sceneName = SceneManager.GetActiveScene().name;
+        foreach (LevelConfig level in Levels)
+        {
+            if (level != null && level.SceneName == sceneName)
+            {
+                CurrentLevel = level;
+                return;
+            }
         }
     }
 
@@ -117,7 +149,7 @@ public class LevelManager : MonoBehaviour
             if (GetLevelById(i) == null)
             {
                 LevelConfig runtimeConfig = ScriptableObject.CreateInstance<LevelConfig>();
-                string sceneName = i == 1 ? "M1_CriticalTechnicalProof" : $"L{i:02d}_Blockout";
+                string sceneName = i == 1 ? "L01_Integration" : (i == 2 ? "L02_Integration" : (i == 3 ? "L03_Integration" : $"L{i:02d}_Blockout"));
                 runtimeConfig.name = $"RuntimeLevel_{i:02d}";
                 typeof(LevelConfig).GetField("levelId", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(runtimeConfig, i);
                 typeof(LevelConfig).GetField("displayName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(runtimeConfig, $"Level {i:02d}");

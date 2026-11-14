@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// Drives a lightweight "camera focus" transform that the gameplay CinemachineCamera follows.
@@ -27,13 +27,13 @@ public class ActiveEntityCameraFocus : MonoBehaviour
 
     [Header("Framing")]
     [Tooltip("Height of the focus point above the entity's feet.")]
-    [SerializeField] private float focusHeight = 1.0f;
+    [SerializeField] private float focusHeight = 1.1f;
 
     [Tooltip("Constant world-space look-ahead toward the course direction (exit is +Z in M1).")]
-    [SerializeField] private Vector3 courseLookAhead = new Vector3(0f, 0f, 1.8f);
+    [SerializeField] private Vector3 courseLookAhead = Vector3.zero;
 
     [Tooltip("Extra look-ahead in the entity's horizontal movement direction.")]
-    [SerializeField] private float movementLookAhead = 1.0f;
+    [SerializeField] private float movementLookAhead = 0.5f;
 
     [SerializeField] private float lookAheadSmoothTime = 0.4f;
 
@@ -49,6 +49,15 @@ public class ActiveEntityCameraFocus : MonoBehaviour
 
     [SerializeField] private float maxFocusSpeed = 60f;
 
+    [Header("Rotation Following")]
+    [Tooltip("If true, the focus point smoothly matches the yaw of the active target so the camera stays behind the character.")]
+    [SerializeField] private bool followTargetRotation = true;
+    [SerializeField] private float rotationSmoothTime = 0.25f;
+
+    [Tooltip("Downward camera pitch angle in degrees (e.g. 12-14 degrees for a natural behind-the-player view).")]
+    [SerializeField] private float cameraPitch = 12f;
+
+    private float rotationVelocity;
     private Vector3 focusVelocity;
     private Vector3 lookAheadOffset;
     private Vector3 lookAheadVelocity;
@@ -144,6 +153,7 @@ public class ActiveEntityCameraFocus : MonoBehaviour
         lookAheadVelocity = Vector3.zero;
         focusVelocity = Vector3.zero;
         transform.position = GetFeetPosition(target) + Vector3.up * focusHeight + courseLookAhead;
+        if (target != null) transform.rotation = Quaternion.Euler(cameraPitch, target.eulerAngles.y, 0f);
         lastTargetPosition = target.position;
         hasLastTargetPosition = true;
     }
@@ -190,6 +200,14 @@ public class ActiveEntityCameraFocus : MonoBehaviour
         }
 
         transform.position = Vector3.SmoothDamp(transform.position, desired, ref focusVelocity, smoothTime, maxFocusSpeed, dt);
+
+        if (followTargetRotation && target != null)
+        {
+            float targetYaw = target.eulerAngles.y;
+            float currentYaw = transform.eulerAngles.y;
+            float smoothYaw = Mathf.SmoothDampAngle(currentYaw, targetYaw, ref rotationVelocity, rotationSmoothTime, 360f, dt);
+            transform.rotation = Quaternion.Euler(cameraPitch, smoothYaw, 0f);
+        }
     }
 
     private static Vector3 GetFeetPosition(Transform target)

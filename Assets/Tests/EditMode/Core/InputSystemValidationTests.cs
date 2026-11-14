@@ -26,7 +26,7 @@ public class InputSystemValidationTests
         shadow = shadowGo.AddComponent<IntegrationTestShadow>();
 
         inputSystem.SetStateMachine(stateMachine);
-        
+        inputSystem.SetShadowController(shadow);
     }
 
     [TearDown]

@@ -20,6 +20,45 @@ public class ContextualActionButton : MonoBehaviour
     [SerializeField] private string recoverLabel = "RECOVER";
     [SerializeField] private string reunitingLabel = "REUNITING";
 
+    [Header("Icon Configuration")]
+    [SerializeField] private Image buttonIcon;
+    [SerializeField] private Sprite detachIcon;
+    [SerializeField] private Sprite recallIcon;
+    [SerializeField] private Sprite stealIcon;
+    [SerializeField] private Sprite recoverIcon;
+    [SerializeField] private bool showIconsOnly = false;
+
+    [Header("Pulsing Effect")]
+    [SerializeField] private bool enablePulsing = false;
+    [SerializeField] private float pulseFrequency = 4.5f;
+    [SerializeField] private float pulseScale = 0.08f;
+
+    private Vector3 initialScale = Vector3.one;
+    public bool EnablePulsing { get => enablePulsing; set => SetPulsing(value); }
+
+    public void SetPulsing(bool pulsing)
+    {
+        enablePulsing = pulsing;
+        if (!pulsing)
+        {
+            transform.localScale = initialScale;
+        }
+    }
+
+    private void Update()
+    {
+        if (enablePulsing && button != null && button.interactable)
+        {
+            float wave = Mathf.Sin(Time.time * pulseFrequency);
+            float scaleMul = 1f + wave * pulseScale;
+            transform.localScale = initialScale * scaleMul;
+        }
+        else if (transform.localScale != initialScale)
+        {
+            transform.localScale = initialScale;
+        }
+    }
+
     private Button button;
     private bool isStealTargetInRange = false;
 
@@ -28,6 +67,7 @@ public class ContextualActionButton : MonoBehaviour
 
     private void Awake()
     {
+        initialScale = transform.localScale;
         button = GetComponent<Button>();
         button.onClick.AddListener(HandleButtonClick);
     }
@@ -91,7 +131,8 @@ public class ContextualActionButton : MonoBehaviour
 
         if (button == null)
         {
-            button = GetComponent<Button>();
+            initialScale = transform.localScale;
+        button = GetComponent<Button>();
         }
 
         PlayerShadowState state = stateMachine.CurrentState;
@@ -137,7 +178,34 @@ public class ContextualActionButton : MonoBehaviour
             button.interactable = interactable;
         }
 
-        SetLabelText(labelText);
+        UpdateVisuals(state, labelText);
+    }
+
+    private void UpdateVisuals(PlayerShadowState state, string labelText)
+    {
+        Sprite icon = null;
+        switch (CurrentAction)
+        {
+            case InputAction.Detach: icon = detachIcon; break;
+            case InputAction.Recall: icon = recallIcon; break;
+            case InputAction.Steal: icon = stealIcon; break;
+            case InputAction.Recover: icon = recoverIcon; break;
+        }
+
+        if (buttonIcon != null)
+        {
+            buttonIcon.sprite = icon;
+            buttonIcon.enabled = icon != null;
+        }
+
+        if (showIconsOnly && icon != null)
+        {
+            SetLabelText("");
+        }
+        else
+        {
+            SetLabelText(labelText);
+        }
     }
 
     private void SetLabelText(string text)

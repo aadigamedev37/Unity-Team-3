@@ -1,4 +1,4 @@
-
+﻿
 //production ready script
 
 
@@ -14,6 +14,12 @@ public class PlayerController : MonoBehaviour, IPlayerAgent, IPlayerController
     [SerializeField] private float gravity = -20f;
     [SerializeField] private Transform movementReference;
 
+    [Header("Jump")]
+    [SerializeField] private float jumpHeight = 1.2f;
+    [SerializeField] private float jumpTimeout = 0.15f;
+    private float jumpTimeoutDelta = 0f;
+    private bool jumpRequested = false;
+
     private CharacterController characterController; //reference to the CharacterController
     private Vector3 verticalVelocity; //stores the player's vertical falling velocity
     private bool isFrozen; //checks whether the player is currently frozen
@@ -23,9 +29,16 @@ public class PlayerController : MonoBehaviour, IPlayerAgent, IPlayerController
         characterController = GetComponent<CharacterController>(); //initialize the CharacterController here
 
         //Fallback to the player's own transform if no movement reference is assigned
+        if (characterController == null)
+            characterController = GetComponent<CharacterController>();
+
+        if (characterController == null)
+            characterController = GetComponent<CharacterController>();
+
         if (movementReference == null)
         {
-            movementReference = transform;
+            var mainCam = Camera.main;
+            movementReference = mainCam != null ? mainCam.transform : transform;
         }
     }
 
@@ -36,7 +49,16 @@ public class PlayerController : MonoBehaviour, IPlayerAgent, IPlayerController
         if (isFrozen)
             return;
 
+        if (characterController == null)
+            characterController = GetComponent<CharacterController>();
+
         //Get the forward and right directions from the movement reference
+        if (movementReference == null)
+        {
+            var mainCam = Camera.main;
+            movementReference = mainCam != null ? mainCam.transform : transform;
+        }
+
         Vector3 forward = movementReference.forward;
         Vector3 right = movementReference.right;
 
@@ -53,14 +75,39 @@ public class PlayerController : MonoBehaviour, IPlayerAgent, IPlayerController
             forward * input.y;
 
         //Apply the movement speed
+        if (moveDirection.sqrMagnitude > 0.001f)
+        {
+            float targetAngle = Mathf.Atan2(moveDirection.x, moveDirection.z) * Mathf.Rad2Deg;
+            transform.rotation = Quaternion.Euler(0f, targetAngle, 0f);
+        }
+
         Vector3 movement = moveDirection * moveSpeed;
 
-        //Ground check.
-        //If the player is grounded and still moving downward, keep a small downward force
-        //so the CharacterController remains grounded.
-        if (characterController.isGrounded && verticalVelocity.y < 0f)
+        if (jumpTimeoutDelta > 0f)
         {
-            verticalVelocity.y = -2f;
+            jumpTimeoutDelta -= Time.deltaTime;
+        }
+
+        // Robust ground check: CC isGrounded combined with downward raycast
+        bool grounded = characterController.isGrounded || Physics.Raycast(transform.position, Vector3.down, 1.15f, ~0, QueryTriggerInteraction.Ignore);
+
+        if (grounded)
+        {
+            if (verticalVelocity.y < 0f)
+            {
+                verticalVelocity.y = -2f;
+            }
+
+            if (jumpRequested && jumpTimeoutDelta <= 0f)
+            {
+                verticalVelocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+                jumpTimeoutDelta = jumpTimeout;
+                jumpRequested = false;
+            }
+        }
+        else
+        {
+            jumpRequested = false;
         }
 
         //Apply gravity over time
@@ -72,6 +119,23 @@ public class PlayerController : MonoBehaviour, IPlayerAgent, IPlayerController
 
         //Move the CharacterController once using the combined movement
         characterController.Move(finalMovement * Time.deltaTime);
+    }
+
+    public void Jump()
+    {
+        if (isFrozen)
+            return;
+
+        if (characterController == null)
+            characterController = GetComponent<CharacterController>();
+
+        bool grounded = (characterController != null && characterController.isGrounded) ||
+                        Physics.Raycast(transform.position, Vector3.down, 1.15f, ~0, QueryTriggerInteraction.Ignore);
+
+        if (grounded)
+        {
+            jumpRequested = true;
+        }
     }
 
     //Function used to freeze the player
@@ -90,7 +154,11 @@ public class PlayerController : MonoBehaviour, IPlayerAgent, IPlayerController
     //Reset the player to the specified spawn position and rotation
     public void ResetToSpawn(Vector3 position, Quaternion rotation)
     {
-        characterController.enabled = false; //disable CharacterController so the player can be repositioned safely
+        if (characterController == null)
+            characterController = GetComponent<CharacterController>();
+
+        if (characterController != null)
+            characterController.enabled = false; //disable CharacterController so the player can be repositioned safely
 
         transform.SetPositionAndRotation(position, rotation); //set the player's position and rotation
 
@@ -121,6 +189,12 @@ public class PlayerController : MonoBehaviour, IPlayerAgent
     [SerializeField] private float moveSpeed = 4f;
     [SerializeField] private float gravity = -20f;
     [SerializeField] private Transform movementReference;
+
+    [Header("Jump")]
+    [SerializeField] private float jumpHeight = 1.2f;
+    [SerializeField] private float jumpTimeout = 0.15f;
+    private float jumpTimeoutDelta = 0f;
+    private bool jumpRequested = false;
 
     private CharacterController characterController;  //reference to character controller
     private Vector3 verticalVelocity;       //falling velocity vertical axis and a boolean to check and freeze the player state
