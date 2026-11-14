@@ -11,6 +11,18 @@ public class PlayerShadowStateMachine : MonoBehaviour
     private void Awake()
     {
         CurrentState = PlayerShadowState.Attached;
+        if (ShadowManager == null)
+        {
+            ShadowManager = FindAnyObjectByType<ShadowManager>(FindObjectsInactive.Include);
+        }
+    }
+
+    private void Start()
+    {
+        if (ShadowManager == null)
+        {
+            ShadowManager = FindAnyObjectByType<ShadowManager>(FindObjectsInactive.Include);
+        }
     }
 
     public bool CanPerformAction(InputAction action)
@@ -43,6 +55,10 @@ public class PlayerShadowStateMachine : MonoBehaviour
         }
 
         ChangeState(PlayerShadowState.Detached);
+        if (ShadowManager == null)
+        {
+            ShadowManager = FindAnyObjectByType<ShadowManager>(FindObjectsInactive.Include);
+        }
         if (ShadowManager != null)
         {
             ShadowManager.SpawnShadow();
@@ -61,7 +77,15 @@ public class PlayerShadowStateMachine : MonoBehaviour
         }
 
         ChangeState(PlayerShadowState.Reuniting);
-        ShadowManager.ExitShadow();
+        if (ShadowManager == null)
+        {
+            ShadowManager = FindAnyObjectByType<ShadowManager>(FindObjectsInactive.Include);
+        }
+        if (ShadowManager != null)
+        {
+            ShadowManager.ExitShadow();
+            CompleteReunion();
+        }
         Debug.Log("Shadow Reuniting");
         return true;
     }
@@ -75,6 +99,14 @@ public class PlayerShadowStateMachine : MonoBehaviour
         }
 
         ChangeState(PlayerShadowState.Attached);
+        if (ShadowManager == null)
+        {
+            ShadowManager = FindAnyObjectByType<ShadowManager>(FindObjectsInactive.Include);
+        }
+        if (ShadowManager != null)
+        {
+            ShadowManager.ExitShadow();
+        }
         GameEvents.RaiseShadowRecalled();
 
         Debug.Log("Shadow Reunited");
@@ -116,6 +148,15 @@ public class PlayerShadowStateMachine : MonoBehaviour
         }
 
         ChangeState(PlayerShadowState.Reuniting);
+        if (ShadowManager == null)
+        {
+            ShadowManager = FindAnyObjectByType<ShadowManager>(FindObjectsInactive.Include);
+        }
+        if (ShadowManager != null)
+        {
+            ShadowManager.ExitShadow();
+            CompleteReunion();
+        }
 
         Debug.Log("Recover triggered. Shadow is reuniting.");
         return true;
@@ -129,6 +170,14 @@ public class PlayerShadowStateMachine : MonoBehaviour
     public void ResetToAttached()
     {
         ChangeState(PlayerShadowState.Attached);
+        if (ShadowManager == null)
+        {
+            ShadowManager = FindAnyObjectByType<ShadowManager>(FindObjectsInactive.Include);
+        }
+        if (ShadowManager != null)
+        {
+            ShadowManager.ExitShadow();
+        }
         GameEvents.RaiseShadowRecalled();
         Debug.Log("PlayerShadowStateMachine: Reset to Attached.");
     }

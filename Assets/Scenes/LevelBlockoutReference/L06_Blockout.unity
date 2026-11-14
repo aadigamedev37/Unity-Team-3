@@ -29065,7 +29065,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b6c7e1c58076834380a1271a12c1bdd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExitTrigger
-  levelId: 1
+  levelId: 6
   isLocked: 0
 --- !u!65 &674627064
 BoxCollider:
@@ -36345,57 +36345,45 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1408757862}
+    m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 4292794577101088139, guid: fcf79d213ca14884587cbf5b2f2ff42e, type: 3}
+    - target: {fileID: 1759853641859607281, guid: 20fd0afd2cd78584fb348d575658917e, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4292794577101088139, guid: fcf79d213ca14884587cbf5b2f2ff42e, type: 3}
+    - target: {fileID: 1759853641859607281, guid: 20fd0afd2cd78584fb348d575658917e, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.1
+      value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4292794577101088139, guid: fcf79d213ca14884587cbf5b2f2ff42e, type: 3}
+    - target: {fileID: 1759853641859607281, guid: 20fd0afd2cd78584fb348d575658917e, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 2
+      value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4292794577101088139, guid: fcf79d213ca14884587cbf5b2f2ff42e, type: 3}
+    - target: {fileID: 1759853641859607281, guid: 20fd0afd2cd78584fb348d575658917e, type: 3}
       propertyPath: m_LocalRotation.w
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 4292794577101088139, guid: fcf79d213ca14884587cbf5b2f2ff42e, type: 3}
+    - target: {fileID: 1759853641859607281, guid: 20fd0afd2cd78584fb348d575658917e, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4292794577101088139, guid: fcf79d213ca14884587cbf5b2f2ff42e, type: 3}
+    - target: {fileID: 1759853641859607281, guid: 20fd0afd2cd78584fb348d575658917e, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4292794577101088139, guid: fcf79d213ca14884587cbf5b2f2ff42e, type: 3}
+    - target: {fileID: 1759853641859607281, guid: 20fd0afd2cd78584fb348d575658917e, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4292794577101088139, guid: fcf79d213ca14884587cbf5b2f2ff42e, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4292794577101088139, guid: fcf79d213ca14884587cbf5b2f2ff42e, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4292794577101088139, guid: fcf79d213ca14884587cbf5b2f2ff42e, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8356857952294395372, guid: fcf79d213ca14884587cbf5b2f2ff42e, type: 3}
+    - target: {fileID: 7548851348393032251, guid: 20fd0afd2cd78584fb348d575658917e, type: 3}
       propertyPath: m_Name
-      value: Player
+      value: Player_Controller
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: fcf79d213ca14884587cbf5b2f2ff42e, type: 3}
+  m_SourcePrefab: {fileID: 100100000, guid: 20fd0afd2cd78584fb348d575658917e, type: 3}
 --- !u!4 &861769815 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4292794577101088139, guid: fcf79d213ca14884587cbf5b2f2ff42e, type: 3}

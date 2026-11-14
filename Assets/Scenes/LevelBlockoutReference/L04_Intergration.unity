@@ -1404,7 +1404,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b6c7e1c58076834380a1271a12c1bdd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExitTrigger
-  levelId: 1
+  levelId: 4
 --- !u!65 &668459102
 BoxCollider:
   m_ObjectHideFlags: 0

@@ -58,15 +58,16 @@ public class ShadowManager : MonoBehaviour
         if (playerController != null)
             playerController.enabled = true;
 
-        
-
         if (shadowSkeleton != null)
             skeletonStartRotation = shadowSkeleton.localRotation;
-        playerAnimator = player.GetComponent<Animator>();
 
-        //playerInputs = player.GetComponent<StarterAssetsInputs>();
-        //shadowInputs = shadow.GetComponent<StarterAssetsInputs>();
-        playerAnimator.speed = 1f;
+        if (player != null)
+        {
+            playerAnimator = player.GetComponent<Animator>();
+            if (playerAnimator != null)
+                playerAnimator.speed = 1f;
+        }
+
         SetPlayerCamera();
     }
 
@@ -84,10 +85,35 @@ public class ShadowManager : MonoBehaviour
 
     private void Update()
     {
-        if (toggleAction == null)
+        // If PlayerShadowStateMachine exists, InputSystem and StateMachine authoritatively drive Detach/Recall
+        if (FindAnyObjectByType<PlayerShadowStateMachine>(FindObjectsInactive.Include) != null)
+        {
             return;
+        }
 
-        if (toggleAction.action.WasPressedThisFrame())
+        bool triggered = false;
+        if (toggleAction != null && toggleAction.action != null && toggleAction.action.WasPressedThisFrame())
+        {
+            triggered = true;
+        }
+        else
+        {
+            if (UnityEngine.InputSystem.Keyboard.current != null)
+            {
+                var kb = UnityEngine.InputSystem.Keyboard.current;
+                triggered = kb.eKey.wasPressedThisFrame || kb.qKey.wasPressedThisFrame;
+            }
+            if (!triggered)
+            {
+                try
+                {
+                    triggered = Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Q);
+                }
+                catch { }
+            }
+        }
+
+        if (triggered)
         {
             if (shadowMode)
                 ExitShadow();
@@ -99,28 +125,34 @@ public class ShadowManager : MonoBehaviour
 
     public void SpawnShadow()
     {
+        if (player == null || shadow == null)
+            return;
 
-        //ClearPlayerInput();
-        player.GetComponent<PlayerInput>().enabled = false;
-        shadow.GetComponent<PlayerInput>().enabled = true;
+        var pInput = player.GetComponent<PlayerInput>();
+        if (pInput != null) pInput.enabled = false;
+
+        var sInput = shadow.GetComponent<PlayerInput>();
+        if (sInput != null) sInput.enabled = true;
+
         shadowMode = true;
+
         // Stop player
         if (playerController != null)
             playerController.enabled = false;
 
+        var pc = player.GetComponent<PlayerController>() ?? FindAnyObjectByType<PlayerController>();
+        if (pc != null) pc.Freeze();
+
         if (playerAnimator != null)
             playerAnimator.SetBool("Isdetach", true);
 
-        Vector3 position =
-     player.position -
-     player.forward * shadowDistance;
-
-        position.y = player.position.y;
-
-        shadowTransform.position = position;
-
-        // Make shadow face same direction as player
-        shadowTransform.rotation = player.rotation;
+        if (shadowTransform != null)
+        {
+            Vector3 position = player.position - player.forward * shadowDistance;
+            position.y = player.position.y;
+            shadowTransform.position = position;
+            shadowTransform.rotation = player.rotation;
+        }
 
         // Reset skeleton rotation
         if (shadowSkeleton != null)
@@ -133,13 +165,15 @@ public class ShadowManager : MonoBehaviour
         if (shadowController != null)
             shadowController.enabled = false;
 
-        
-
         // Start rolling animation
         if (spawnCoroutine != null)
             StopCoroutine(spawnCoroutine);
 
-        spawnCoroutine = StartCoroutine(ShadowSpawnAnimation());
+        if (shadowSkeleton != null && shadowTransform != null)
+            spawnCoroutine = StartCoroutine(ShadowSpawnAnimation());
+        else if (shadowController != null)
+            shadowController.enabled = true;
+
         SetShadowCamera();
     }
 
@@ -205,10 +239,20 @@ public class ShadowManager : MonoBehaviour
     public void ExitShadow()
     {
         shadowMode = false;
-        playerAnimator.SetBool("Isdetach", false);
-        //ClearShadowInput();
-        shadow.GetComponent<PlayerInput>().enabled = false;
-        player.GetComponent<PlayerInput>().enabled = true;
+        if (playerAnimator != null)
+            playerAnimator.SetBool("Isdetach", false);
+
+        if (shadow != null)
+        {
+            var sInput = shadow.GetComponent<PlayerInput>();
+            if (sInput != null) sInput.enabled = false;
+        }
+
+        if (player != null)
+        {
+            var pInput = player.GetComponent<PlayerInput>();
+            if (pInput != null) pInput.enabled = true;
+        }
 
         if (spawnCoroutine != null)
         {
@@ -216,24 +260,21 @@ public class ShadowManager : MonoBehaviour
             spawnCoroutine = null;
         }
 
-        // Stop shadow
-        //if (shadowController != null)
-        //    shadowController.enabled = false;
-
-        // Reset skeleton
         if (shadowSkeleton != null)
             shadowSkeleton.localRotation = skeletonStartRotation;
 
-        // Hide shadow
         if (shadow != null)
             shadow.SetActive(false);
 
-        // Start player again
         if (playerAnimator != null)
             playerAnimator.speed = 1f;
 
         if (playerController != null)
             playerController.enabled = true;
+
+        var pc = player != null ? player.GetComponent<PlayerController>() : null;
+        if (pc == null) pc = FindAnyObjectByType<PlayerController>();
+        if (pc != null) pc.Unfreeze();
 
         SetPlayerCamera();
     }

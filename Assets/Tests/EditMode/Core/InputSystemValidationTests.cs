@@ -111,4 +111,50 @@ public class InputSystemValidationTests
         stateMachine.CompleteReunion();
         Assert.AreEqual(InputTarget.Player, inputSystem.ActiveTarget);
     }
+
+    [Test]
+    public void TriggerContextualAction_WhenAttached_TriggersDetach()
+    {
+        Assert.AreEqual(PlayerShadowState.Attached, stateMachine.CurrentState);
+        inputSystem.TriggerContextualAction();
+        Assert.AreEqual(PlayerShadowState.Detached, stateMachine.CurrentState);
+        Assert.AreEqual(InputTarget.Shadow, inputSystem.ActiveTarget);
+    }
+
+    [Test]
+    public void TriggerContextualAction_WhenDetached_TriggersRecall()
+    {
+        inputSystem.TriggerDetach();
+        Assert.AreEqual(PlayerShadowState.Detached, stateMachine.CurrentState);
+        inputSystem.TriggerContextualAction();
+        Assert.AreEqual(PlayerShadowState.Reuniting, stateMachine.CurrentState);
+    }
+
+    [Test]
+    public void TriggerContextualAction_WithShadowManager_RecallsDirectlyToAttached()
+    {
+        var sm = rootGo.AddComponent<ShadowManager>();
+        stateMachine.ShadowManager = sm;
+        inputSystem.TriggerDetach();
+        Assert.AreEqual(PlayerShadowState.Detached, stateMachine.CurrentState);
+        inputSystem.TriggerContextualAction();
+        Assert.AreEqual(PlayerShadowState.Attached, stateMachine.CurrentState);
+    }
+
+    [Test]
+    public void TriggerContextualAction_AutoResolvesStateMachine_WhenUnassigned()
+    {
+        GameObject newRoot = new GameObject("Test_Unassigned");
+        try
+        {
+            var sm = newRoot.AddComponent<PlayerShadowStateMachine>();
+            var inp = newRoot.AddComponent<InputSystem>();
+            inp.TriggerContextualAction();
+            Assert.AreEqual(PlayerShadowState.Detached, sm.CurrentState);
+        }
+        finally
+        {
+            Object.DestroyImmediate(newRoot);
+        }
+    }
 }

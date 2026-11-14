@@ -184,7 +184,7 @@ namespace StealMan.Core
             yield return new WaitForSeconds(1.2f);
             isLevelCompleting = false;
 
-            if (completedLevelId < 3)
+            if (completedLevelId < 10)
             {
                 int nextLevelId = completedLevelId + 1;
                 Debug.Log($"[GameManager] Advancing to Level {nextLevelId}...");
@@ -192,7 +192,7 @@ namespace StealMan.Core
             }
             else
             {
-                Debug.Log("[GameManager] Level 3 completed! Returning to Level Select.");
+                Debug.Log("[GameManager] Level 10 completed! Returning to Level Select.");
                 LoadLevelSelect();
             }
         }
@@ -311,6 +311,13 @@ namespace StealMan.Core
                 case 1: return "L01_Integration";
                 case 2: return "L02_Integration";
                 case 3: return "L03_Integration";
+                case 4: return "L04_Integration";
+                case 5: return "L05_Integration";
+                case 6: return "L06_Blockout";
+                case 7: return "L07_Blockout";
+                case 8: return "L08_Blockout";
+                case 9: return "L09_Blockout";
+                case 10: return "L10_Blockout";
                 default: return $"L{levelId:D2}_Blockout";
             }
         }

@@ -30,6 +30,23 @@ public class ExitTrigger : MonoBehaviour
     private void Awake()
     {
         EnsureFaderCanvas();
+        SyncLevelId();
+    }
+
+    private void SyncLevelId()
+    {
+        if (LevelManager.Instance != null && LevelManager.Instance.CurrentLevel != null)
+        {
+            levelId = LevelManager.Instance.CurrentLevel.LevelId;
+            return;
+        }
+
+        string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        var match = System.Text.RegularExpressions.Regex.Match(sceneName, @"L(\d+)");
+        if (match.Success && int.TryParse(match.Groups[1].Value, out int parsedId))
+        {
+            levelId = parsedId;
+        }
     }
 
     private void OnEnable()
@@ -84,11 +101,20 @@ public class ExitTrigger : MonoBehaviour
         {
             playerCtrl.enabled = false;
         }
+        var thirdPersonCtrl = other.GetComponentInParent<StarterAssets.ThirdPersonController>();
+        if (thirdPersonCtrl != null)
+        {
+            thirdPersonCtrl.enabled = false;
+        }
 
         // 3. Persist progression via SaveManager if active
         if (SaveManager.Instance != null)
         {
             SaveManager.Instance.CompleteLevel(levelId);
+        }
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.SetCurrentLevelId(levelId);
         }
 
         // 4. Execute cinematic fade and transition
@@ -105,13 +131,17 @@ public class ExitTrigger : MonoBehaviour
         // Smooth cinematic fade to black (0.7s)
         yield return StartCoroutine(FadeRoutine(0f, 1f, 0.7f));
 
-        // Determine destination scene
-        string targetScene = levelId switch
+        // Determine destination scene (proper progression up to Level 10)
+        string targetScene;
+        if (levelId < 10)
         {
-            1 => "L02_Integration",
-            2 => "L03_Integration",
-            _ => "LevelSelect"
-        };
+            int nextLevelId = levelId + 1;
+            targetScene = GameManager.GetSceneNameForLevel(nextLevelId);
+        }
+        else
+        {
+            targetScene = "LevelSelect";
+        }
 
         Debug.Log($"ExitTrigger: Seamlessly transitioning to '{targetScene}'...");
 
@@ -192,6 +222,12 @@ public class ExitTrigger : MonoBehaviour
             return false;
         }
 
+        var sm = FindAnyObjectByType<ShadowManager>(FindObjectsInactive.Include);
+        if (sm != null && sm.shadow != null && (other.transform == sm.shadow.transform || other.transform.IsChildOf(sm.shadow.transform)))
+        {
+            return false;
+        }
+
         MonoBehaviour[] behaviours = other.GetComponentsInParent<MonoBehaviour>();
         foreach (MonoBehaviour behaviour in behaviours)
         {
@@ -199,6 +235,15 @@ public class ExitTrigger : MonoBehaviour
             {
                 return true;
             }
+            if (behaviour != null && behaviour.GetType().Name == "ThirdPersonController" && !other.name.ToLower().Contains("shadow"))
+            {
+                return true;
+            }
+        }
+
+        if (other.name.ToLower().Contains("playerarmature") || other.name.ToLower().Contains("player") || other.transform.root.name.ToLower().Contains("player"))
+        {
+            return true;
         }
 
         return other.CompareTag("Player");

@@ -70,21 +70,33 @@ public class ContextualActionButton : MonoBehaviour
         initialScale = transform.localScale;
         button = GetComponent<Button>();
         button.onClick.AddListener(HandleButtonClick);
+        ResolveDependencies();
     }
 
     private void Start()
     {
+        ResolveDependencies();
         UpdateContextualState();
     }
 
     private void OnEnable()
     {
+        ResolveDependencies();
         if (stateMachine != null)
         {
+            stateMachine.OnStateChanged -= HandleStateChanged;
             stateMachine.OnStateChanged += HandleStateChanged;
         }
 
         UpdateContextualState();
+    }
+
+    private void ResolveDependencies()
+    {
+        if (stateMachine == null)
+            stateMachine = FindAnyObjectByType<PlayerShadowStateMachine>(FindObjectsInactive.Include);
+        if (inputSystem == null)
+            inputSystem = FindAnyObjectByType<InputSystem>(FindObjectsInactive.Include);
     }
 
     private void OnDisable()
@@ -232,6 +244,8 @@ public class ContextualActionButton : MonoBehaviour
         if (Time.frameCount == lastClickFrame)
             return;
         lastClickFrame = Time.frameCount;
+
+        ResolveDependencies();
 
         if (inputSystem != null)
         {

@@ -53,13 +53,31 @@ public class InputSystem : MonoBehaviour
         MoveInput = Vector2.zero;
         if (playerController == null)
         {
-            playerController = FindAnyObjectByType<PlayerController>();
+            playerController = FindAnyObjectByType<PlayerController>(FindObjectsInactive.Include);
+        }
+        if (stateMachine == null)
+        {
+            stateMachine = FindAnyObjectByType<PlayerShadowStateMachine>(FindObjectsInactive.Include);
         }
         ResolveShadowController();
     }
 
     private void Start()
     {
+        if (playerController == null)
+        {
+            playerController = FindAnyObjectByType<PlayerController>(FindObjectsInactive.Include);
+        }
+        if (stateMachine == null)
+        {
+            stateMachine = FindAnyObjectByType<PlayerShadowStateMachine>(FindObjectsInactive.Include);
+            if (stateMachine != null)
+            {
+                stateMachine.OnStateChanged -= HandleStateChanged;
+                stateMachine.OnStateChanged += HandleStateChanged;
+            }
+        }
+        ResolveShadowController();
 #if UNITY_EDITOR
         ConfigureCursorForEditorTesting();
 #endif
@@ -69,6 +87,10 @@ public class InputSystem : MonoBehaviour
 
     private void OnEnable()
     {
+        if (stateMachine == null)
+        {
+            stateMachine = FindAnyObjectByType<PlayerShadowStateMachine>(FindObjectsInactive.Include);
+        }
         if (stateMachine != null)
         {
             stateMachine.OnStateChanged -= HandleStateChanged;
@@ -135,11 +157,24 @@ public class InputSystem : MonoBehaviour
         }
         else if (shadowController == null)
         {
-            var sma = FindAnyObjectByType<ShadowMovementAdapter>();
+            var sma = FindAnyObjectByType<ShadowMovementAdapter>(FindObjectsInactive.Include);
             if (sma != null)
             {
                 shadowController = sma;
                 shadowControllerTarget = sma;
+            }
+            else
+            {
+                var shadowObj = GameObject.Find("Shadow") ?? GameObject.Find("AuthoritativeShadow");
+                if (shadowObj != null)
+                {
+                    var isc = shadowObj.GetComponent<IShadowController>() ?? shadowObj.GetComponentInChildren<IShadowController>(true);
+                    if (isc != null)
+                    {
+                        shadowController = isc;
+                        shadowControllerTarget = isc as MonoBehaviour;
+                    }
+                }
             }
         }
     }
@@ -265,6 +300,34 @@ public class InputSystem : MonoBehaviour
         {
             TriggerJump();
         }
+
+        // Pause hotkey: Escape or P
+        bool pausePressed = false;
+        if (UnityEngine.InputSystem.Keyboard.current != null)
+        {
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            pausePressed = kb.escapeKey.wasPressedThisFrame || kb.pKey.wasPressedThisFrame;
+        }
+        if (!pausePressed)
+        {
+            try
+            {
+                pausePressed = Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P);
+            }
+            catch { }
+        }
+
+        if (pausePressed)
+        {
+            if (Mohit.MetaSystems.PauseMenuManager.Instance != null)
+            {
+                Mohit.MetaSystems.PauseMenuManager.Instance.TogglePause();
+            }
+            else if (StealMan.Core.GameManager.Instance != null)
+            {
+                StealMan.Core.GameManager.Instance.TogglePause();
+            }
+        }
 #endif
     }
 
@@ -319,8 +382,13 @@ public class InputSystem : MonoBehaviour
 
     public void TriggerContextualAction()
     {
-        var actionButton = FindAnyObjectByType<ContextualActionButton>();
-        if (actionButton != null)
+        if (stateMachine == null)
+        {
+            stateMachine = FindAnyObjectByType<PlayerShadowStateMachine>(FindObjectsInactive.Include);
+        }
+
+        var actionButton = FindAnyObjectByType<ContextualActionButton>(FindObjectsInactive.Include);
+        if (actionButton != null && actionButton.gameObject.activeInHierarchy)
         {
             actionButton.TriggerCurrentAction();
         }
@@ -332,7 +400,14 @@ public class InputSystem : MonoBehaviour
                     TriggerDetach();
                     break;
                 case PlayerShadowState.Detached:
-                    TriggerRecall();
+                    if (actionButton != null && actionButton.IsStealTargetInRange)
+                    {
+                        TriggerSteal();
+                    }
+                    else
+                    {
+                        TriggerRecall();
+                    }
                     break;
                 case PlayerShadowState.Trapped:
                     TriggerRecover();
@@ -347,6 +422,11 @@ public class InputSystem : MonoBehaviour
         if (Application.isPlaying && Time.frameCount == lastActionFrame && (action == lastAction || (lastAction == InputAction.Detach && action == InputAction.Recall)))
         {
             return;
+        }
+
+        if (stateMachine == null)
+        {
+            stateMachine = FindAnyObjectByType<PlayerShadowStateMachine>(FindObjectsInactive.Include);
         }
 
         if (stateMachine == null)
@@ -433,9 +513,17 @@ public class InputSystem : MonoBehaviour
 
             case PlayerShadowState.Detached:
                 activeTarget = InputTarget.Shadow;
+                if (playerController == null)
+                {
+                    playerController = FindAnyObjectByType<PlayerController>(FindObjectsInactive.Include);
+                }
                 if (playerController != null)
                 {
                     playerController.Freeze();
+                }
+                if (shadowController == null)
+                {
+                    ResolveShadowController();
                 }
                 if (shadowController != null)
                 {

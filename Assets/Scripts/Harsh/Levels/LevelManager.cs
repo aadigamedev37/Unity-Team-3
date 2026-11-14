@@ -149,10 +149,10 @@ public class LevelManager : MonoBehaviour
             if (GetLevelById(i) == null)
             {
                 LevelConfig runtimeConfig = ScriptableObject.CreateInstance<LevelConfig>();
-                string sceneName = i == 1 ? "L01_Integration" : (i == 2 ? "L02_Integration" : (i == 3 ? "L03_Integration" : $"L{i:02d}_Blockout"));
+                string sceneName = StealMan.Core.GameManager.GetSceneNameForLevel(i);
                 runtimeConfig.name = $"RuntimeLevel_{i:02d}";
                 typeof(LevelConfig).GetField("levelId", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(runtimeConfig, i);
-                typeof(LevelConfig).GetField("displayName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(runtimeConfig, $"Level {i:02d}");
+                typeof(LevelConfig).GetField("displayName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(runtimeConfig, Mohit.MetaSystems.LevelNames.Get(i));
                 typeof(LevelConfig).GetField("sceneName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(runtimeConfig, sceneName);
                 levels.Add(runtimeConfig);
             }

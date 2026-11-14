@@ -13,6 +13,8 @@ namespace Mohit.MetaSystems
             {
                 if (PauseMenuManager.Instance != null)
                     PauseMenuManager.Instance.TogglePause();
+                else if (StealMan.Core.GameManager.Instance != null)
+                    StealMan.Core.GameManager.Instance.TogglePause();
             });
         }
     }
