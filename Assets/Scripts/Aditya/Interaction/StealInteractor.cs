@@ -14,10 +14,11 @@ public class StealInteractor : MonoBehaviour
     [SerializeField] private ContextualActionButton actionButton;
 
     [Header("Detection Settings")]
-    [SerializeField] private float detectionRadius = 2.0f;
+    [SerializeField] private float detectionRadius = 3.5f;
     [SerializeField] private LayerMask stealableLayer = ~0;
 
-    private readonly Collider[] hitBuffer = new Collider[16];
+    // Buffer sized generously for scenes with dense modular floor/wall colliders
+    private readonly Collider[] hitBuffer = new Collider[128];
     private StealableBase currentTarget;
 
     public StealableBase CurrentTarget => currentTarget;
@@ -83,7 +84,9 @@ public class StealInteractor : MonoBehaviour
             StealableBase stealable = col.GetComponentInParent<StealableBase>();
             if (stealable != null && stealable.CanSteal())
             {
-                float dist = Vector3.Distance(transform.position, stealable.transform.position);
+                // Bounds.ClosestPoint is universally supported on all collider types without throwing warnings
+                Vector3 surfacePoint = col.bounds.ClosestPoint(transform.position);
+                float dist = Vector3.Distance(transform.position, surfacePoint);
                 if (dist < closestDistance)
                 {
                     closestDistance = dist;
