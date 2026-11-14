@@ -8,8 +8,9 @@ namespace Mohit.MetaSystems
     [Serializable]
     public class SaveData
     {
-        public List<int> unlockedLevels = new List<int> {1}; // Level 1 always unlocked
+        public List<int> unlockedLevels = new List<int> { 1 }; // Level 1 always unlocked
         public List<int> completedLevels = new List<int>();
+        public ScoreDataCollection scoreData = new ScoreDataCollection();
     }
 
     public class SaveManager : MonoBehaviour
@@ -94,7 +95,7 @@ namespace Mohit.MetaSystems
         {
 
             Debug.Log("SaveManager: loading from " + SavePath);
-            
+
             if (File.Exists(SavePath))
             {
                 try
@@ -122,6 +123,7 @@ namespace Mohit.MetaSystems
         {
             _data.unlockedLevels = CleanList(_data.unlockedLevels);
             _data.completedLevels = CleanList(_data.completedLevels);
+            if (_data.scoreData == null) _data.scoreData = new ScoreDataCollection();
 
             // Find the highest level the player should have access to
             int highest = 1;
@@ -136,7 +138,7 @@ namespace Mohit.MetaSystems
             for (int i = 1; i <= highest; i++)
                 _data.unlockedLevels.Add(i);
 
-                Debug.Log($"SaveManager: validated. Unlocked = [{string.Join(",", _data.unlockedLevels)}], Completed = [{string.Join(",", _data.completedLevels)}]");
+            Debug.Log($"SaveManager: validated. Unlocked = [{string.Join(",", _data.unlockedLevels)}], Completed = [{string.Join(",", _data.completedLevels)}]");
         }
 
         private List<int> CleanList(List<int> source)
@@ -178,6 +180,28 @@ namespace Mohit.MetaSystems
             EnsureDataLoaded();
             return _data.completedLevels.Contains(levelNumber);
         }
+
+        public LevelScoreData GetScoreData(int levelId)
+        {
+            EnsureDataLoaded();
+            return _data.scoreData.Find(levelId);   // null when never cleared
+        }
+
+        public bool SaveScore(int levelId, int score, int stars, float time, int deaths)
+        {
+            EnsureDataLoaded();
+            bool improved = _data.scoreData.GetOrCreate(levelId).Record(score, stars, time, deaths);
+            SaveToDisk();
+            return improved;
+        }
+
+        public int GetTotalStars()
+        {
+            EnsureDataLoaded();
+            return _data.scoreData.GetTotalStars();
+        }
+
+        public int GetMaxPossibleStars() { return TotalLevels * 3; }
 
         public void CompleteLevel(int levelNumber)
         {

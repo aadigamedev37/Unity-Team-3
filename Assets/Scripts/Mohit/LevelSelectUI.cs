@@ -13,22 +13,35 @@ namespace Mohit.MetaSystems
         [SerializeField] private GameObject levelButtonPrefab;                    // the LevelCard prefab
         [Header("Colors")]
         [SerializeField] private Color unlockedColor = Color.white;
+        [SerializeField] private TMP_Text totalStarsText;
         [SerializeField] private Color lockedColor = new Color(0.4f, 0.4f, 0.4f, 1f);
         [SerializeField] private Color completedColor = new Color(0.4f, 1f, 0.4f, 1f);
+        [SerializeField] private Button[] chapterTabs;       // Tab_Ch1, Tab_Ch2, Tab_Ch3
+        [SerializeField] private GameObject[] chapterRows;   // Row_BreakIn, Row_Lockdown, Row_Source
+        [SerializeField] private string[] chapterNames = { "BREAK-IN", "LOCKDOWN", "THE SOURCE" };
+        [SerializeField] private Sprite tabSelectedSprite;
+        [SerializeField] private Sprite tabNormalSprite;
+        [SerializeField] private Sprite[] chapterThumbnails; // 3 pictures, one per chapter
+        private int selectedChapter;
 
         private void Start()
         {
+
             if (SaveManager.Instance == null)
             {
                 Debug.LogWarning("LevelSelectUI: SaveManager instance not found.");
             }
-
             PopulateLevelButtons();
         }
 
-        private void OnEnable()
+        void OnEnable()
         {
+            // SaveManager.Instance.CompleteLevel(1);  // temproary testing line, remove later
+            // SaveManager.Instance.SaveScore(1, 1950, 3, 22f, 0); // temproary testing line, remove later
             PopulateLevelButtons();
+            SetupTabs();
+            int highest = SaveManager.Instance.GetHighestUnlockedLevel();
+            SelectChapter(Mathf.Clamp((highest - 1) / 5, 0, 2));
         }
 
         public void PopulateLevelButtons()
@@ -52,6 +65,8 @@ namespace Mohit.MetaSystems
                 GameObject buttonObj = Instantiate(levelButtonPrefab, phaseContainers[phase]);
                 SetupButton(buttonObj, level);
             }
+            if (totalStarsText != null && SaveManager.Instance != null)
+                totalStarsText.text = SaveManager.Instance.GetTotalStars() + " / " + SaveManager.Instance.GetMaxPossibleStars();
         }
 
         private void SetupButton(GameObject buttonObj, int levelNumber)
@@ -63,7 +78,15 @@ namespace Mohit.MetaSystems
             bool isCompleted = SaveManager.Instance != null && SaveManager.Instance.IsLevelCompleted(levelNumber);
 
             if (view != null)
-                view.Bind(levelNumber, isUnlocked, isCompleted, 0, 0f);   // stars and time arrive in step 5
+            {
+                LevelScoreData s = SaveManager.Instance != null ? SaveManager.Instance.GetScoreData(levelNumber) : null;
+                int stars = s != null ? s.bestStars : 0;
+                float best = s != null ? s.bestTime : 0f;
+                view.Bind(levelNumber, isUnlocked, isCompleted, stars, best);
+                view.SetThumbnail(chapterThumbnails[Mathf.Clamp((levelNumber - 1) / 5, 0, 2)], !isUnlocked);
+                int highestNow = SaveManager.Instance.GetHighestUnlockedLevel();
+                view.SetCurrent(isUnlocked, isUnlocked && !isCompleted && levelNumber == highestNow);
+            }
 
             button.interactable = isUnlocked;
 
@@ -114,6 +137,67 @@ namespace Mohit.MetaSystems
                 SceneFader.Instance.LoadScene("MainMenu");
             else
                 SceneManager.LoadScene("MainMenu");
+        }
+
+        bool IsChapterUnlocked(int chapter)
+        {
+            return SaveManager.Instance.GetHighestUnlockedLevel() >= chapter * 5 + 1;
+        }
+
+        void SetupTabs()
+        {
+            for (int i = 0; i < chapterTabs.Length; i++)
+            {
+                int index = i; // copy, so each button keeps its own number
+                chapterTabs[i].onClick.RemoveAllListeners();
+                chapterTabs[i].onClick.AddListener(() =>
+                {
+                    if (IsChapterUnlocked(index)) SelectChapter(index);
+                });
+
+                // the lock icon shows only while the chapter is locked
+                Transform icon = chapterTabs[i].transform.Find("Icon");
+                if (icon != null) icon.gameObject.SetActive(!IsChapterUnlocked(i));
+            }
+
+            // the sidebar names the chapters, so hide the old row labels
+            foreach (GameObject row in chapterRows)
+            {
+                Transform label = row.transform.Find("Label");
+                if (label != null) label.gameObject.SetActive(false);
+            }
+        }
+
+        void SelectChapter(int index)
+        {
+            selectedChapter = index;
+            for (int i = 0; i < chapterRows.Length; i++)
+                chapterRows[i].SetActive(i == index);
+
+            for (int i = 0; i < chapterTabs.Length; i++)
+            {
+                bool selected = (i == index);
+
+                Transform visual = chapterTabs[i].transform.Find("Visual");
+                if (visual != null)
+                {
+                    Image img = visual.GetComponent<Image>();
+                    if (img != null)
+                    {
+                        img.sprite = selected ? tabSelectedSprite : tabNormalSprite;
+                        img.color = Color.white;
+                    }
+                }
+
+                // two-line label, built here so every tab is identical
+                TMP_Text label = chapterTabs[i].GetComponentInChildren<TMP_Text>();
+                if (label != null)
+                {
+                    string small = selected ? "#FFFFFF" : "#9A9AA6";
+                    label.text = "<size=60%><color=" + small + ">CH.0" + (i + 1) + "</color></size>\n" + chapterNames[i];
+                    label.color = selected ? Color.white : new Color(0.88f, 0.87f, 0.85f);
+                }
+            }
         }
     }
 }
