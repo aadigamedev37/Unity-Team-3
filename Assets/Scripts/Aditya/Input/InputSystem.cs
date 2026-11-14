@@ -34,6 +34,8 @@ public class InputSystem : MonoBehaviour
 
     private IShadowController shadowController;
     private Vector2? inputOverride = null;
+    private StarterAssets.StarterAssetsInputs starterPlayerInputs;
+    private StarterAssets.StarterAssetsInputs starterShadowInputs;
 
     public void SetInputOverride(Vector2? overrideInput)
     {
@@ -141,8 +143,35 @@ public class InputSystem : MonoBehaviour
         ResolveShadowController();
     }
 
+    private void ResolveMovementReferences()
+    {
+        if (playerController == null)
+        {
+            playerController = FindAnyObjectByType<PlayerController>(FindObjectsInactive.Include);
+        }
+
+        if (starterPlayerInputs == null)
+        {
+            var pObj = GameObject.Find("PlayerArmature") ?? GameObject.Find("Player") ?? GameObject.FindWithTag("Player");
+            if (pObj != null)
+            {
+                starterPlayerInputs = pObj.GetComponent<StarterAssets.StarterAssetsInputs>() ?? pObj.GetComponentInChildren<StarterAssets.StarterAssetsInputs>(true);
+            }
+        }
+
+        if (starterShadowInputs == null)
+        {
+            var sObj = GameObject.Find("Shadow") ?? GameObject.Find("AuthoritativeShadow");
+            if (sObj != null)
+            {
+                starterShadowInputs = sObj.GetComponent<StarterAssets.StarterAssetsInputs>() ?? sObj.GetComponentInChildren<StarterAssets.StarterAssetsInputs>(true);
+            }
+        }
+    }
+
     private void ResolveShadowController()
     {
+        ResolveMovementReferences();
         if (shadowControllerTarget != null)
         {
             shadowController = shadowControllerTarget as IShadowController;
@@ -333,6 +362,8 @@ public class InputSystem : MonoBehaviour
 
     private void SendMovementInput()
     {
+        ResolveMovementReferences();
+
         switch (activeTarget)
         {
             case InputTarget.Player:
@@ -340,9 +371,17 @@ public class InputSystem : MonoBehaviour
                 {
                     playerController.HandleMovement(MoveInput);
                 }
+                if (starterPlayerInputs != null)
+                {
+                    starterPlayerInputs.MoveInput(MoveInput);
+                }
                 if (shadowController != null)
                 {
                     shadowController.HandleMovement(Vector2.zero);
+                }
+                if (starterShadowInputs != null)
+                {
+                    starterShadowInputs.MoveInput(Vector2.zero);
                 }
                 break;
 
@@ -351,9 +390,17 @@ public class InputSystem : MonoBehaviour
                 {
                     shadowController.HandleMovement(MoveInput);
                 }
+                if (starterShadowInputs != null)
+                {
+                    starterShadowInputs.MoveInput(MoveInput);
+                }
                 if (playerController != null)
                 {
                     playerController.HandleMovement(Vector2.zero);
+                }
+                if (starterPlayerInputs != null)
+                {
+                    starterPlayerInputs.MoveInput(Vector2.zero);
                 }
                 break;
         }
@@ -362,10 +409,14 @@ public class InputSystem : MonoBehaviour
     private void ClearAllMovementInput()
     {
         MoveInput = Vector2.zero;
-        if (playerController != null)
+        if (playerController != null && playerController.isActiveAndEnabled)
             playerController.HandleMovement(Vector2.zero);
+        if (starterPlayerInputs != null)
+            starterPlayerInputs.MoveInput(Vector2.zero);
         if (shadowController != null)
             shadowController.HandleMovement(Vector2.zero);
+        if (starterShadowInputs != null)
+            starterShadowInputs.MoveInput(Vector2.zero);
     }
 
     public void TriggerJump()
@@ -412,6 +463,15 @@ public class InputSystem : MonoBehaviour
                 case PlayerShadowState.Trapped:
                     TriggerRecover();
                     break;
+            }
+        }
+        else
+        {
+            var sm = FindAnyObjectByType<ShadowManager>(FindObjectsInactive.Include);
+            if (sm != null)
+            {
+                if (sm.shadowMode) sm.ExitShadow();
+                else sm.SpawnShadow();
             }
         }
     }
@@ -471,15 +531,30 @@ public class InputSystem : MonoBehaviour
     public void TriggerDetach()
     {
         TriggerAction(InputAction.Detach);
+        var sm = FindAnyObjectByType<ShadowManager>(FindObjectsInactive.Include);
+        if (sm != null && !sm.shadowMode)
+        {
+            sm.SpawnShadow();
+        }
     }
 
     public void TriggerRecall()
     {
         TriggerAction(InputAction.Recall);
+        var sm = FindAnyObjectByType<ShadowManager>(FindObjectsInactive.Include);
+        if (sm != null && sm.shadowMode)
+        {
+            sm.ExitShadow();
+        }
     }
 
     public void TriggerSteal()
     {
+        var interactor = FindAnyObjectByType<StealInteractor>(FindObjectsInactive.Include);
+        if (interactor != null && interactor.HasTarget)
+        {
+            interactor.ExecuteSteal();
+        }
         TriggerAction(InputAction.Steal);
     }
 

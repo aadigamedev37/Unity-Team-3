@@ -23,13 +23,13 @@ public class StealableDrawbridge : StealableBase
     {
         if (bridgeArm == null)
         {
-            Transform arm = transform.Find("BridgeArm") ?? transform.Find("Visual");
+            Transform arm = transform.Find("BridgeArm") ?? transform.Find("Visual") ?? transform.Find("drawbridge") ?? transform.Find("platform");
             bridgeArm = arm != null ? arm : transform;
         }
 
         if (walkableCollider == null)
         {
-            walkableCollider = GetComponent<Collider>();
+            walkableCollider = GetComponent<Collider>() ?? GetComponentInChildren<Collider>();
         }
 
         ApplyCurrentState(false);
@@ -69,14 +69,19 @@ public class StealableDrawbridge : StealableBase
 
     private void SetImmediateState(bool isLowered)
     {
-        if (walkableCollider != null)
-        {
-            walkableCollider.enabled = isLowered;
-        }
-
         if (blockingCollider != null)
         {
             blockingCollider.enabled = !isLowered;
+            if (walkableCollider != null)
+            {
+                walkableCollider.enabled = isLowered;
+            }
+        }
+        else if (walkableCollider != null)
+        {
+            // If only one collider is present, keep it active so StealInteractor can detect it when raised,
+            // and the player can walk across it when lowered.
+            walkableCollider.enabled = true;
         }
 
         if (bridgeArm != null)

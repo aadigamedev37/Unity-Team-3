@@ -10,14 +10,11 @@ public class ShadowManager : MonoBehaviour
     public Transform player;
     public ThirdPersonController playerController;
     private Animator playerAnimator;
-    
 
     [Header("Shadow")]
     public GameObject shadow;
     public Transform shadowTransform;
     public ThirdPersonController shadowController;
-
-
 
     [Header("Shadow Skeleton")]
     public Transform shadowSkeleton;
@@ -39,17 +36,105 @@ public class ShadowManager : MonoBehaviour
     private Coroutine spawnCoroutine;
 
     private Quaternion skeletonStartRotation;
-  
-    //private StarterAssetsInputs playerInputs;
-    //private StarterAssetsInputs shadowInputs;
 
     [Header("Shadow Light")]
     public Light shadowLight;
- 
+
     public LayerMask groundLayer;
     public Transform playerHead;
+
+    private void Awake()
+    {
+        ResolveReferences();
+    }
+
+    public void ResolveReferences()
+    {
+        if (player == null)
+        {
+            var pCtrl = FindAnyObjectByType<PlayerController>(FindObjectsInactive.Include);
+            if (pCtrl != null)
+            {
+                player = pCtrl.transform;
+            }
+            else
+            {
+                var tpcList = FindObjectsByType<ThirdPersonController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                foreach (var t in tpcList)
+                {
+                    if (t != null && !t.name.ToLower().Contains("shadow") && (t.name.Contains("Player") || t.CompareTag("Player")))
+                    {
+                        player = t.transform;
+                        playerController = t;
+                        break;
+                    }
+                }
+                if (player == null)
+                {
+                    var pObj = GameObject.Find("PlayerArmature") ?? GameObject.Find("Player") ?? GameObject.FindWithTag("Player");
+                    if (pObj != null) player = pObj.transform;
+                }
+            }
+        }
+
+        if (playerController == null && player != null)
+        {
+            playerController = player.GetComponent<ThirdPersonController>();
+        }
+
+        if (shadow == null)
+        {
+            var sObj = GameObject.Find("Shadow") ?? GameObject.Find("AuthoritativeShadow");
+            if (sObj != null)
+            {
+                shadow = sObj;
+            }
+            else
+            {
+                var tpcList = FindObjectsByType<ThirdPersonController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                foreach (var t in tpcList)
+                {
+                    if (t != null && t.name.ToLower().Contains("shadow"))
+                    {
+                        shadow = t.gameObject;
+                        shadowController = t;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (shadow != null)
+        {
+            if (shadowTransform == null) shadowTransform = shadow.transform;
+            if (shadowController == null) shadowController = shadow.GetComponent<ThirdPersonController>();
+            if (shadowSkeleton == null)
+            {
+                shadowSkeleton = shadow.transform.Find("body/Skeleton") ?? shadow.transform.Find("Skeleton");
+            }
+        }
+
+        if (camera == null)
+        {
+            camera = FindAnyObjectByType<CinemachineCamera>(FindObjectsInactive.Include);
+        }
+
+        if (playerCameraTarget == null && player != null)
+        {
+            Transform pRoot = player.Find("PlayerCameraRoot") ?? player.Find("CameraRoot") ?? player;
+            playerCameraTarget = pRoot;
+        }
+
+        if (shadowCameraTarget == null && shadow != null)
+        {
+            Transform sRoot = shadow.transform.Find("ShadowCameraRoot") ?? shadow.transform.Find("CameraRoot") ?? shadow.transform;
+            shadowCameraTarget = sRoot;
+        }
+    }
+
     private void Start()
     {
+        ResolveReferences();
         shadowMode = false;
 
         if (shadow != null)
@@ -73,20 +158,21 @@ public class ShadowManager : MonoBehaviour
 
     private void OnEnable()
     {
-        if (toggleAction != null)
+        if (toggleAction != null && toggleAction.action != null)
             toggleAction.action.Enable();
     }
 
     private void OnDisable()
     {
-        if (toggleAction != null)
+        if (toggleAction != null && toggleAction.action != null)
             toggleAction.action.Disable();
     }
 
     private void Update()
     {
-        // If PlayerShadowStateMachine exists, InputSystem and StateMachine authoritatively drive Detach/Recall
-        if (FindAnyObjectByType<PlayerShadowStateMachine>(FindObjectsInactive.Include) != null)
+        var psSm = FindAnyObjectByType<PlayerShadowStateMachine>(FindObjectsInactive.Include);
+        var inSys = FindAnyObjectByType<InputSystem>(FindObjectsInactive.Include);
+        if (psSm != null && inSys != null && inSys.isActiveAndEnabled)
         {
             return;
         }
@@ -115,16 +201,30 @@ public class ShadowManager : MonoBehaviour
 
         if (triggered)
         {
-            if (shadowMode)
-                ExitShadow();
+            if (psSm != null)
+            {
+                if (psSm.CurrentState == PlayerShadowState.Attached)
+                {
+                    psSm.Detach();
+                }
+                else if (psSm.CurrentState == PlayerShadowState.Detached)
+                {
+                    psSm.Recall();
+                }
+            }
             else
-                SpawnShadow();
+            {
+                if (shadowMode)
+                    ExitShadow();
+                else
+                    SpawnShadow();
+            }
         }
-        //shadowLightObject.transform.position = GetShadowHeadPosition() ;
     }
 
     public void SpawnShadow()
     {
+        ResolveReferences();
         if (player == null || shadow == null)
             return;
 
@@ -181,10 +281,7 @@ public class ShadowManager : MonoBehaviour
     {
         float time = 0f;
 
-        // Final position
         Vector3 finalPosition = shadowTransform.position;
-
-        // Start below ground
         Vector3 startPosition = finalPosition;
         startPosition.y -= 1.8f;
 
@@ -193,51 +290,35 @@ public class ShadowManager : MonoBehaviour
         while (time < spawnTime)
         {
             time += Time.deltaTime;
-
             float t = Mathf.Clamp01(time / spawnTime);
-
-            // Smooth movement upward
             float smooth = Mathf.SmoothStep(0f, 1f, t);
 
-            // Move shadow from underground to final position
-            shadowSkeleton.position = Vector3.Lerp(
-                startPosition,
-                finalPosition,
-                smooth
-            );
+            if (shadowSkeleton != null)
+                shadowSkeleton.position = Vector3.Lerp(startPosition, finalPosition, smooth);
 
-            // Roll skeleton around Y
-            float yRotation = Mathf.Lerp(
-                rotations * 360f,
-                0f,
-                smooth
-            );
+            float currentRotation = t * rotations * 360f;
 
             if (shadowSkeleton != null)
-            {
-                shadowSkeleton.localRotation =
-                    skeletonStartRotation *
-                    Quaternion.Euler(0f, yRotation, 0f);
-            }
+                shadowSkeleton.localRotation = skeletonStartRotation * Quaternion.Euler(currentRotation, 0f, 0f);
 
             yield return null;
         }
 
-        // Make sure everything finishes exactly
-        shadowTransform.position = finalPosition;
+        if (shadowSkeleton != null)
+            shadowSkeleton.position = finalPosition;
 
         if (shadowSkeleton != null)
             shadowSkeleton.localRotation = skeletonStartRotation;
 
         spawnCoroutine = null;
 
-        // Shadow can move now
         if (shadowMode && shadowController != null)
             shadowController.enabled = true;
     }
 
     public void ExitShadow()
     {
+        ResolveReferences();
         shadowMode = false;
         if (playerAnimator != null)
             playerAnimator.SetBool("Isdetach", false);
@@ -293,7 +374,8 @@ public class ShadowManager : MonoBehaviour
         if (camera == null || shadowCameraTarget == null)
             return;
 
-        shadowCameraTarget.position = playerCameraTarget.position;
+        if (playerCameraTarget != null)
+            shadowCameraTarget.position = playerCameraTarget.position;
 
         camera.Follow = shadowCameraTarget;
         camera.LookAt = shadowCameraTarget;
@@ -302,26 +384,16 @@ public class ShadowManager : MonoBehaviour
     private Vector3 GetShadowHeadPosition()
     {
         if (playerHead == null || shadowLight == null)
-            return player.position;
+            return player != null ? player.position : Vector3.zero;
 
-        Vector3 shadowDirection =
-            -shadowLight.transform.forward;
+        Vector3 shadowDirection = -shadowLight.transform.forward;
+        Ray ray = new Ray(playerHead.position, shadowDirection);
 
-        Ray ray = new Ray(
-            playerHead.position,
-            shadowDirection
-        );
-
-        if (Physics.Raycast(
-            ray,
-            out RaycastHit hit,
-            100f,
-            groundLayer))
+        if (Physics.Raycast(ray, out RaycastHit hit, 100f, groundLayer))
         {
             return hit.point;
         }
 
-        return player.position + Vector3.one;
+        return player != null ? player.position + Vector3.one : Vector3.zero;
     }
-
 }

@@ -28,20 +28,27 @@ public class StealInteractor : MonoBehaviour
 
     private void Awake()
     {
+        ResolveDependencies();
+    }
+
+    private void ResolveDependencies()
+    {
         if (stateMachine == null)
-            stateMachine = FindAnyObjectByType<PlayerShadowStateMachine>();
+            stateMachine = FindAnyObjectByType<PlayerShadowStateMachine>(FindObjectsInactive.Include);
 
         if (inputSystem == null)
-            inputSystem = FindAnyObjectByType<InputSystem>();
+            inputSystem = FindAnyObjectByType<InputSystem>(FindObjectsInactive.Include);
 
         if (actionButton == null)
-            actionButton = FindAnyObjectByType<ContextualActionButton>();
+            actionButton = FindAnyObjectByType<ContextualActionButton>(FindObjectsInactive.Include);
     }
 
     private void OnEnable()
     {
+        ResolveDependencies();
         if (inputSystem != null)
         {
+            inputSystem.OnAction -= HandleActionTriggered;
             inputSystem.OnAction += HandleActionTriggered;
         }
     }
@@ -63,6 +70,11 @@ public class StealInteractor : MonoBehaviour
 
     private void CheckForNearbyStealables()
     {
+        if (stateMachine == null || actionButton == null || inputSystem == null)
+        {
+            ResolveDependencies();
+        }
+
         if (stateMachine != null && stateMachine.CurrentState != PlayerShadowState.Detached)
         {
             if (currentTarget != null)
@@ -81,7 +93,7 @@ public class StealInteractor : MonoBehaviour
             Collider col = hitBuffer[i];
             if (col == null) continue;
 
-            StealableBase stealable = col.GetComponentInParent<StealableBase>();
+            StealableBase stealable = col.GetComponentInParent<StealableBase>() ?? col.GetComponentInChildren<StealableBase>();
             if (stealable != null && stealable.CanSteal())
             {
                 // Bounds.ClosestPoint is universally supported on all collider types without throwing warnings

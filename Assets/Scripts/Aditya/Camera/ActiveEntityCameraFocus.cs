@@ -71,19 +71,56 @@ public class ActiveEntityCameraFocus : MonoBehaviour
 
     private void Awake()
     {
-        if (stateMachine == null) stateMachine = FindAnyObjectByType<PlayerShadowStateMachine>();
-        if (inputSystem == null) inputSystem = FindAnyObjectByType<InputSystem>();
+        ResolveTargets();
+    }
+
+    private void ResolveTargets()
+    {
+        if (stateMachine == null) stateMachine = FindAnyObjectByType<PlayerShadowStateMachine>(FindObjectsInactive.Include);
+        if (inputSystem == null) inputSystem = FindAnyObjectByType<InputSystem>(FindObjectsInactive.Include);
 
         if (playerRoot == null)
         {
-            var player = FindAnyObjectByType<PlayerController>();
-            if (player != null) playerRoot = player.transform;
+            var player = FindAnyObjectByType<PlayerController>(FindObjectsInactive.Include);
+            if (player != null)
+            {
+                playerRoot = player.transform;
+            }
+            else
+            {
+                var sm = FindAnyObjectByType<ShadowManager>(FindObjectsInactive.Include);
+                if (sm != null && sm.player != null)
+                {
+                    playerRoot = sm.player;
+                }
+                else
+                {
+                    var pObj = GameObject.Find("PlayerArmature") ?? GameObject.Find("Player") ?? GameObject.FindWithTag("Player");
+                    if (pObj != null) playerRoot = pObj.transform;
+                }
+            }
         }
 
         if (shadowRoot == null)
         {
-            var shadow = FindAnyObjectByType<ShadowMovementAdapter>();
-            if (shadow != null) shadowRoot = shadow.transform;
+            var shadow = FindAnyObjectByType<ShadowMovementAdapter>(FindObjectsInactive.Include);
+            if (shadow != null)
+            {
+                shadowRoot = shadow.transform;
+            }
+            else
+            {
+                var sm = FindAnyObjectByType<ShadowManager>(FindObjectsInactive.Include);
+                if (sm != null && sm.shadow != null)
+                {
+                    shadowRoot = sm.shadow.transform;
+                }
+                else
+                {
+                    var sObj = GameObject.Find("Shadow") ?? GameObject.Find("AuthoritativeShadow");
+                    if (sObj != null) shadowRoot = sObj.transform;
+                }
+            }
         }
     }
 
@@ -105,6 +142,7 @@ public class ActiveEntityCameraFocus : MonoBehaviour
 
     private void Start()
     {
+        ResolveTargets();
         CurrentFocus = ResolveFocus();
         SnapToTarget();
     }
@@ -160,6 +198,10 @@ public class ActiveEntityCameraFocus : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (playerRoot == null || shadowRoot == null)
+        {
+            ResolveTargets();
+        }
         // Safety net: keep in sync even if a state event was missed (e.g. reset paths).
         InputTarget resolved = ResolveFocus();
         if (resolved != CurrentFocus)

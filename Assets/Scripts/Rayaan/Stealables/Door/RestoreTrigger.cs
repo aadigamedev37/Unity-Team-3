@@ -30,7 +30,7 @@ public class RestoreTrigger : MonoBehaviour
     {
         Debug.Log("RESTORE TRIGGER EXIT: " + other.name);
 
-        if (!other.CompareTag("Player"))
+        if (!IsPlayer(other))
             return;
 
         if (stealableObject == null)
@@ -41,5 +41,16 @@ public class RestoreTrigger : MonoBehaviour
         stealableObject.Restore();
 
         Debug.Log("STEALABLE RESTORED TO SOLID");
+    }
+
+    private bool IsPlayer(Collider other)
+    {
+        if (other.name.ToLower().Contains("shadow") || other.GetComponentInParent<IShadowController>() != null)
+            return false;
+
+        return other.CompareTag("Player") ||
+               other.GetComponentInParent<PlayerController>() != null ||
+               other.GetComponentInParent<StarterAssets.ThirdPersonController>() != null ||
+               other.name.ToLower().Contains("player");
     }
 }
