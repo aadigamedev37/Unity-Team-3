@@ -3,10 +3,10 @@ using TMPro;
 
 /// <summary>
 /// Implements the exact tutorial sequence for Level 02 (The Sandbox):
-/// 1. Prompts player to tap DETACH to release the shadow.
-/// 2. Explains independent shadow movement.
-/// 3. Prompts player to tap RECALL to return the shadow.
-/// 4. Directs player to the exit pad once the shadow is reattached.
+/// 1. Enforces level restrictions: hides Jump button, enables Shadow Detach/Recall.
+/// 2. GATES the exit: locks ExitTrigger until the player detaches, moves shadow, and recalls.
+/// 3. Prevents premature exit completion and directs player with movie-like cinematic directives.
+/// 4. Unlocks exit and illuminates portal green/cyan upon tutorial mastery.
 /// </summary>
 public class L02_SandboxTutorial : MonoBehaviour
 {
@@ -14,6 +14,8 @@ public class L02_SandboxTutorial : MonoBehaviour
     [SerializeField] private PlayerShadowStateMachine stateMachine;
     [SerializeField] private PlayerController player;
     [SerializeField] private Transform exitPad;
+    [SerializeField] private ExitTrigger exitTrigger;
+    [SerializeField] private Light exitLight;
 
     [Header("UI References")]
     [SerializeField] private GameObject tutorialCard;
@@ -24,21 +26,25 @@ public class L02_SandboxTutorial : MonoBehaviour
     private Step currentStep = Step.DetachPrompt;
 
     private float shadowMoveTimer = 0f;
+    private bool tutorialCompleted = false;
 
     private void Awake()
     {
         if (stateMachine == null) stateMachine = FindAnyObjectByType<PlayerShadowStateMachine>();
         if (player == null) player = FindAnyObjectByType<PlayerController>();
 
-        if (exitPad == null)
+        if (exitTrigger == null) exitTrigger = FindAnyObjectByType<ExitTrigger>();
+        if (exitPad == null && exitTrigger != null) exitPad = exitTrigger.transform;
+
+        if (exitLight == null)
         {
-            var pad = GameObject.Find("ExitPad") ?? GameObject.Find("ExitZone");
-            if (pad != null) exitPad = pad.transform;
+            var el = GameObject.Find("ExitLight");
+            if (el != null) exitLight = el.GetComponent<Light>();
         }
 
         if (tutorialCard == null)
         {
-            var canvas = GameObject.Find("Canvas");
+            var canvas = GameObject.Find("GameplayHUD_Mobile") ?? GameObject.Find("Canvas");
             if (canvas != null)
             {
                 var card = canvas.transform.Find("TutorialCard");
@@ -59,6 +65,11 @@ public class L02_SandboxTutorial : MonoBehaviour
             stateMachine.OnStateChanged += HandleStateChanged;
         }
         GameEvents.OnLevelComplete += HandleLevelComplete;
+
+        if (exitTrigger != null)
+        {
+            exitTrigger.OnLockedExitAttempted += HandleLockedExitAttempt;
+        }
     }
 
     private void OnDisable()
@@ -68,11 +79,56 @@ public class L02_SandboxTutorial : MonoBehaviour
             stateMachine.OnStateChanged -= HandleStateChanged;
         }
         GameEvents.OnLevelComplete -= HandleLevelComplete;
+
+        if (exitTrigger != null)
+        {
+            exitTrigger.OnLockedExitAttempted -= HandleLockedExitAttempt;
+        }
     }
 
     private void Start()
     {
+        ApplyLevelRestrictions();
+
+        // Lock exit until tutorial requirements are fulfilled
+        if (exitTrigger != null)
+        {
+            exitTrigger.IsLocked = true;
+        }
+
+        if (exitLight != null)
+        {
+            exitLight.color = new Color(1f, 0.2f, 0.2f); // Red = Locked
+        }
+
         SetStep(Step.DetachPrompt);
+    }
+
+    private void ApplyLevelRestrictions()
+    {
+        var canvas = GameObject.Find("GameplayHUD_Mobile") ?? GameObject.Find("Canvas");
+        if (canvas != null)
+        {
+            // Hide Jump button for Level 2
+            var jumpBtn = canvas.transform.Find("JumpButton");
+            if (jumpBtn != null) jumpBtn.gameObject.SetActive(false);
+
+            // Ensure Contextual Action Button (Shadow Walk / Detach) is enabled
+            var actionBtn = canvas.transform.Find("ContextualActionButton");
+            if (actionBtn != null) actionBtn.gameObject.SetActive(true);
+
+            // Hide duplicate LevelHeader to avoid overlapping title bars
+            var levelHeader = canvas.transform.Find("LevelHeader");
+            if (levelHeader != null) levelHeader.gameObject.SetActive(false);
+
+            // Position TutorialCard cleanly at the top
+            var card = canvas.transform.Find("TutorialCard") as RectTransform;
+            if (card != null)
+            {
+                card.anchoredPosition = new Vector2(0f, -40f);
+                card.sizeDelta = new Vector2(500f, 75f);
+            }
+        }
     }
 
     private void Update()
@@ -82,7 +138,7 @@ public class L02_SandboxTutorial : MonoBehaviour
         if (currentStep == Step.ShadowActive)
         {
             shadowMoveTimer += Time.deltaTime;
-            if (shadowMoveTimer > 2.0f)
+            if (shadowMoveTimer > 2.5f)
             {
                 SetStep(Step.RecallPrompt);
             }
@@ -90,7 +146,7 @@ public class L02_SandboxTutorial : MonoBehaviour
         else if (currentStep == Step.ProceedToExit && player != null && exitPad != null)
         {
             float dist = Vector3.Distance(player.transform.position, exitPad.position);
-            if (dist < 3.5f)
+            if (dist < 4.5f)
             {
                 SetStep(Step.NearExit);
             }
@@ -112,13 +168,31 @@ public class L02_SandboxTutorial : MonoBehaviour
             case PlayerShadowState.Attached:
                 if (currentStep == Step.ShadowActive || currentStep == Step.RecallPrompt)
                 {
+                    tutorialCompleted = true;
+                    // Unlock the exit
+                    if (exitTrigger != null)
+                    {
+                        exitTrigger.IsLocked = false;
+                    }
+                    if (exitLight != null)
+                    {
+                        exitLight.color = new Color(0.2f, 0.9f, 1f); // Vibrant Cyan = Unlocked
+                    }
                     SetStep(Step.ProceedToExit);
                 }
                 break;
         }
     }
 
-    private void HandleLevelComplete(int levelId)
+    private void HandleLockedExitAttempt()
+    {
+        if (tutorialCard == null) return;
+        tutorialCard.SetActive(true);
+        if (tutorialTitle != null) tutorialTitle.text = "EXIT LOCKED";
+        if (tutorialInstruction != null) tutorialInstruction.text = "You must detach and recall your shadow to unlock the exit.";
+    }
+
+    public void HandleLevelComplete(int levelId)
     {
         SetStep(Step.Completed);
     }
@@ -133,36 +207,38 @@ public class L02_SandboxTutorial : MonoBehaviour
         {
             case Step.DetachPrompt:
                 tutorialCard.SetActive(true);
-                if (tutorialTitle != null) tutorialTitle.text = "SHADOW MECHANIC";
-                if (tutorialInstruction != null) tutorialInstruction.text = "Tap DETACH to release your Shadow";
+                if (tutorialTitle != null) tutorialTitle.text = "SECTOR 02: THE SANDBOX";
+                if (tutorialInstruction != null) tutorialInstruction.text = "Tap DETACH or press 'E' to separate your Shadow";
                 break;
 
             case Step.ShadowActive:
                 tutorialCard.SetActive(true);
                 if (tutorialTitle != null) tutorialTitle.text = "SHADOW DETACHED";
-                if (tutorialInstruction != null) tutorialInstruction.text = "Move your Shadow independently around the room";
+                if (tutorialInstruction != null) tutorialInstruction.text = "Guide your Shadow independently around the room";
                 break;
 
             case Step.RecallPrompt:
                 tutorialCard.SetActive(true);
                 if (tutorialTitle != null) tutorialTitle.text = "RECALL MECHANIC";
-                if (tutorialInstruction != null) tutorialInstruction.text = "Tap RECALL to snap your Shadow back to you";
+                if (tutorialInstruction != null) tutorialInstruction.text = "Tap RECALL or press 'E' to snap your Shadow back to you";
                 break;
 
             case Step.ProceedToExit:
                 tutorialCard.SetActive(true);
-                if (tutorialTitle != null) tutorialTitle.text = "OBJECTIVE";
-                if (tutorialInstruction != null) tutorialInstruction.text = "Proceed to the illuminated Exit Pad to complete Level 2";
+                if (tutorialTitle != null) tutorialTitle.text = "TRAINING COMPLETE";
+                if (tutorialInstruction != null) tutorialInstruction.text = "Exit unlocked! Proceed to the portal to advance";
                 break;
 
             case Step.NearExit:
                 tutorialCard.SetActive(true);
                 if (tutorialTitle != null) tutorialTitle.text = "EXIT REACHED";
-                if (tutorialInstruction != null) tutorialInstruction.text = "Step onto the exit pad to complete Level 2";
+                if (tutorialInstruction != null) tutorialInstruction.text = "Step into the portal to proceed to Sector 03";
                 break;
 
             case Step.Completed:
-                tutorialCard.SetActive(false);
+                tutorialCard.SetActive(true);
+                if (tutorialTitle != null) tutorialTitle.text = "SECTOR 02 COMPLETE";
+                if (tutorialInstruction != null) tutorialInstruction.text = "Advancing to Sector 03...";
                 break;
         }
     }
