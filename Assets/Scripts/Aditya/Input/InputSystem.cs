@@ -45,6 +45,9 @@ public class InputSystem : MonoBehaviour
 
     public event Action<InputAction> OnAction;
 
+    private int lastActionFrame = -1;
+    private InputAction lastAction;
+
     private void Awake()
     {
         MoveInput = Vector2.zero;
@@ -64,6 +67,24 @@ public class InputSystem : MonoBehaviour
         HandleStateChanged(stateMachine != null ? stateMachine.CurrentState : PlayerShadowState.Attached);
     }
 
+    private void OnEnable()
+    {
+        if (stateMachine != null)
+        {
+            stateMachine.OnStateChanged -= HandleStateChanged;
+            stateMachine.OnStateChanged += HandleStateChanged;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (stateMachine != null)
+        {
+            stateMachine.OnStateChanged -= HandleStateChanged;
+        }
+        ClearAllMovementInput();
+    }
+
 #if UNITY_EDITOR
     private void OnApplicationFocus(bool hasFocus)
     {
@@ -80,8 +101,7 @@ public class InputSystem : MonoBehaviour
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
 
-            
-            var starterInputs = FindObjectsByType<StarterAssets.StarterAssetsInputs>();
+            var starterInputs = FindObjectsByType<StarterAssets.StarterAssetsInputs>(FindObjectsSortMode.None);
             foreach (var input in starterInputs)
             {
                 if (input != null)
@@ -104,6 +124,10 @@ public class InputSystem : MonoBehaviour
         if (shadowControllerTarget != null)
         {
             shadowController = shadowControllerTarget as IShadowController;
+            if (shadowController == null)
+            {
+                shadowController = shadowControllerTarget.GetComponent<IShadowController>();
+            }
             if (shadowController == null)
             {
                 Debug.LogWarning("InputSystem: shadowControllerTarget does not implement IShadowController.", this);
@@ -143,10 +167,22 @@ public class InputSystem : MonoBehaviour
         if (stateMachine != null)
         {
             stateMachine.OnStateChanged += HandleStateChanged;
+            HandleStateChanged(stateMachine.CurrentState);
         }
     }
 
     private void Update()
+    {
+        ReadMovementInput();
+        HandleKeyboardActions();
+        SendMovementInput();
+    }
+
+    // ----------------------------------
+    // MOVEMENT INPUT
+    // ----------------------------------
+
+    private void ReadMovementInput()
     {
         Vector2 input = Vector2.zero;
         if (inputOverride.HasValue)
@@ -179,21 +215,27 @@ public class InputSystem : MonoBehaviour
                 }
                 catch { }
             }
-            input = Vector2.ClampMagnitude(new Vector2(h, v), 1f);
+            input = new Vector2(h, v);
         }
+#endif
+        MoveInput = Vector2.ClampMagnitude(input, 1f);
+    }
 
-        // Action hotkey: E (Only E handles Detach, Steal, Recall)
+    private void HandleKeyboardActions()
+    {
+#if UNITY_EDITOR || UNITY_STANDALONE
+        // Action hotkey: E or Q handles Detach, Steal, Recall
         bool actionPressed = false;
         if (UnityEngine.InputSystem.Keyboard.current != null)
         {
             var kb = UnityEngine.InputSystem.Keyboard.current;
-            actionPressed = kb.eKey.wasPressedThisFrame;
+            actionPressed = kb.eKey.wasPressedThisFrame || kb.qKey.wasPressedThisFrame;
         }
         if (!actionPressed)
         {
             try
             {
-                actionPressed = Input.GetKeyDown(KeyCode.E);
+                actionPressed = Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Q);
             }
             catch { }
         }
@@ -224,17 +266,43 @@ public class InputSystem : MonoBehaviour
             TriggerJump();
         }
 #endif
+    }
 
-        MoveInput = input;
+    private void SendMovementInput()
+    {
+        switch (activeTarget)
+        {
+            case InputTarget.Player:
+                if (playerController != null && playerController.isActiveAndEnabled)
+                {
+                    playerController.HandleMovement(MoveInput);
+                }
+                if (shadowController != null)
+                {
+                    shadowController.HandleMovement(Vector2.zero);
+                }
+                break;
 
-        if (activeTarget == InputTarget.Player && playerController != null)
-        {
-            playerController.HandleMovement(MoveInput);
+            case InputTarget.Shadow:
+                if (shadowController != null)
+                {
+                    shadowController.HandleMovement(MoveInput);
+                }
+                if (playerController != null)
+                {
+                    playerController.HandleMovement(Vector2.zero);
+                }
+                break;
         }
-        else if (activeTarget == InputTarget.Shadow && shadowController != null)
-        {
-            shadowController.HandleMovement(MoveInput);
-        }
+    }
+
+    private void ClearAllMovementInput()
+    {
+        MoveInput = Vector2.zero;
+        if (playerController != null)
+            playerController.HandleMovement(Vector2.zero);
+        if (shadowController != null)
+            shadowController.HandleMovement(Vector2.zero);
     }
 
     public void TriggerJump()
@@ -272,13 +340,11 @@ public class InputSystem : MonoBehaviour
             }
         }
     }
-    private int lastActionFrame = -1;
-    private InputAction lastAction;
 
     public void TriggerAction(InputAction action)
     {
-        // Prevent accidental double-trigger in the same frame (e.g. duplicate click or Detach immediately followed by Recall)
-        if (Application.isPlaying && Time.frameCount == lastActionFrame && action == lastAction)
+        // Prevent duplicate actions in the same frame
+        if (Application.isPlaying && Time.frameCount == lastActionFrame && (action == lastAction || (lastAction == InputAction.Detach && action == InputAction.Recall)))
         {
             return;
         }
@@ -345,6 +411,8 @@ public class InputSystem : MonoBehaviour
     public void SetActiveTarget(InputTarget target)
     {
         activeTarget = target;
+        ClearAllMovementInput();
+        Debug.Log("Input target changed to: " + activeTarget);
     }
 
     private void HandleStateChanged(PlayerShadowState newState)
@@ -353,12 +421,10 @@ public class InputSystem : MonoBehaviour
         {
             case PlayerShadowState.Attached:
                 activeTarget = InputTarget.Player;
-
                 if (playerController != null)
                 {
                     playerController.Unfreeze();
                 }
-
                 if (shadowController != null)
                 {
                     shadowController.Deactivate();
@@ -367,12 +433,10 @@ public class InputSystem : MonoBehaviour
 
             case PlayerShadowState.Detached:
                 activeTarget = InputTarget.Shadow;
-
                 if (playerController != null)
                 {
                     playerController.Freeze();
                 }
-
                 if (shadowController != null)
                 {
                     shadowController.Activate();
@@ -381,12 +445,10 @@ public class InputSystem : MonoBehaviour
 
             case PlayerShadowState.Reuniting:
                 activeTarget = InputTarget.Shadow;
-
                 if (playerController != null)
                 {
                     playerController.Freeze();
                 }
-
                 if (shadowController != null)
                 {
                     shadowController.Stop();
@@ -395,34 +457,18 @@ public class InputSystem : MonoBehaviour
 
             case PlayerShadowState.Trapped:
                 activeTarget = InputTarget.Shadow;
-
                 if (playerController != null)
                 {
                     playerController.Freeze();
                 }
-
                 if (shadowController != null)
                 {
                     shadowController.Stop();
                 }
                 break;
         }
-    }
 
-    private void OnEnable()
-    {
-        if (stateMachine != null)
-        {
-            stateMachine.OnStateChanged -= HandleStateChanged;
-            stateMachine.OnStateChanged += HandleStateChanged;
-        }
-    }
-
-    private void OnDisable()
-    {
-        if (stateMachine != null)
-        {
-            stateMachine.OnStateChanged -= HandleStateChanged;
-        }
+        ClearAllMovementInput();
+        Debug.Log("Input target changed to: " + activeTarget);
     }
 }
