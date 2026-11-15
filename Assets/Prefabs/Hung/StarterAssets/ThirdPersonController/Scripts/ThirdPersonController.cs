@@ -215,7 +215,22 @@ namespace StarterAssets
         }
         public void HandleMovement(Vector2 input)
         {
-            _input.MoveInput(input);
+            if (_input == null)
+                _input = GetComponent<StarterAssetsInputs>();
+
+            if (_input != null)
+            {
+                _input.MoveInput(input);
+            }
+        }
+        public void ClearMovementInput()
+        {
+            if (_input != null)
+            {
+                _input.MoveInput(Vector2.zero);
+                _input.jump = false;
+                _input.sprint = false;
+            }
         }
         private void Move()
         {
@@ -396,5 +411,8 @@ namespace StarterAssets
 
             }
         }
+
+        
+
     }
 }

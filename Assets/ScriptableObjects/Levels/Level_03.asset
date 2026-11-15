@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LevelConfig
   levelId: 3
   displayName: Level 03: Ghost Gate
-  sceneName: L03_Blockout
+  sceneName: L03_Integration

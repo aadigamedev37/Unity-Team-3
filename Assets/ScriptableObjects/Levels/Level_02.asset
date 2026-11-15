@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LevelConfig
   levelId: 2
   displayName: Level 02: The Sandbox
-  sceneName: L02_Blockout
+  sceneName: L02_Integration

@@ -97,9 +97,9 @@ public class ShadowManager : MonoBehaviour
         //shadowLightObject.transform.position = GetShadowHeadPosition() ;
     }
 
-    private void SpawnShadow()
+    public void SpawnShadow()
     {
-        
+
         //ClearPlayerInput();
         player.GetComponent<PlayerInput>().enabled = false;
         shadow.GetComponent<PlayerInput>().enabled = true;
@@ -209,7 +209,7 @@ public class ShadowManager : MonoBehaviour
         //ClearShadowInput();
         shadow.GetComponent<PlayerInput>().enabled = false;
         player.GetComponent<PlayerInput>().enabled = true;
-        
+
         if (spawnCoroutine != null)
         {
             StopCoroutine(spawnCoroutine);
@@ -252,7 +252,7 @@ public class ShadowManager : MonoBehaviour
         if (camera == null || shadowCameraTarget == null)
             return;
 
-        //shadowCameraTarget.position = shadowTransform.position;
+        shadowCameraTarget.position = playerCameraTarget.position;
 
         camera.Follow = shadowCameraTarget;
         camera.LookAt = shadowCameraTarget;

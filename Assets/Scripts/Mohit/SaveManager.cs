@@ -8,7 +8,7 @@ namespace Mohit.MetaSystems
     [Serializable]
     public class SaveData
     {
-        public List<int> unlockedLevels = new List<int> { 1 }; // Level 1 always unlocked
+        public List<int> unlockedLevels = new List<int> {1}; // Level 1 always unlocked
         public List<int> completedLevels = new List<int>();
     }
 

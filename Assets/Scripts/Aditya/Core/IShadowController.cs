@@ -7,4 +7,5 @@ public interface IShadowController
     void Stop();
     void Reset();
     void HandleMovement(Vector2 input);
+    void Jump() { }
 }
