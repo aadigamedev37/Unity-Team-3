@@ -1,4 +1,5 @@
 using UnityEngine;
+using TMPro;
 using UnityEngine.SceneManagement;
 using StealMan.Core;
 
@@ -12,6 +13,7 @@ namespace Mohit.MetaSystems
         [Header("UI References")]
         [SerializeField] private GameObject mainMenuPanel;
         [SerializeField] private SettingsUI settingsUI;
+        [SerializeField] private TMP_Text statusText;
 
         private void Start()
         {
@@ -24,6 +26,9 @@ namespace Mohit.MetaSystems
             {
                 settingsUI = FindAnyObjectByType<SettingsUI>();
             }
+
+            if (statusText != null && SaveManager.Instance != null)
+                statusText.text = $"SECTOR {SaveManager.Instance.GetHighestUnlockedLevel():D2} // ONLINE";
         }
 
         // Hook this to your "Play" button
